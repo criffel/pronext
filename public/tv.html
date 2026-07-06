@@ -4,171 +4,797 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FilaPro - Painel Eletrônico</title>
-  <link rel="stylesheet" href="/css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&family=Bebas+Neue&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --font-display: 'Bebas Neue', sans-serif;
+      --font-ui: 'Outfit', sans-serif;
+      --bg: #05060f;
+      --surface: rgba(255,255,255,0.04);
+      --border: rgba(255,255,255,0.08);
+      --text: #ffffff;
+      --muted: rgba(255,255,255,0.45);
+      --accent: #38bdf8;
+
+      --c-acougue:    #ef4444;
+      --c-padaria:    #f59e0b;
+      --c-rotisseria: #f97316;
+      --c-frios:      #eab308;
+      --c-peixaria:   #06b6d4;
+      --c-general:    #38bdf8;
+    }
+
+    html, body {
+      width: 100%; height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      font-family: var(--font-ui);
+      color: var(--text);
+    }
+
+    /* ─── LAYOUT PRINCIPAL ─────────────────────────── */
+    #tv-root {
+      display: grid;
+      grid-template-rows: 7vh 66vh 27vh;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ─── TOPBAR ───────────────────────────────────── */
+    #tv-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 3vw;
+      background: rgba(0,0,0,0.6);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(12px);
+      z-index: 50;
+      position: relative;
+    }
+    .topbar-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.8vw;
+      font-family: var(--font-display);
+      font-size: 3.2vh;
+      letter-spacing: 0.12em;
+      color: var(--text);
+    }
+    .topbar-brand span { color: var(--accent); }
+    .topbar-store {
+      font-size: 2.2vh;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    #tv-store-name { color: var(--text); }
+    .topbar-clock {
+      display: flex;
+      align-items: center;
+      gap: 1.2vw;
+    }
+    #tv-clock {
+      font-family: var(--font-display);
+      font-size: 3.6vh;
+      letter-spacing: 0.06em;
+      color: var(--text);
+      min-width: 9vw;
+      text-align: right;
+    }
+    #tv-date {
+      font-size: 1.6vh;
+      color: var(--muted);
+      text-align: right;
+    }
+    .topbar-dot {
+      width: 1.2vh;
+      height: 1.2vh;
+      border-radius: 50%;
+      background: #22c55e;
+      box-shadow: 0 0 8px #22c55e;
+      animation: blink 2s infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    /* ─── SLIDER PRINCIPAL ─────────────────────────── */
+    #tv-slider-area {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .mk-slide {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 1s ease;
+      pointer-events: none;
+    }
+    .mk-slide.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* Slide Geral */
+    .mk-slide.general {
+      background: radial-gradient(ellipse at 30% 50%, rgba(56,189,248,0.18) 0%, var(--bg) 70%);
+    }
+    .mk-slide.acougue    { background: radial-gradient(ellipse at 30% 50%, rgba(239,68,68,0.18) 0%, var(--bg) 70%); }
+    .mk-slide.padaria    { background: radial-gradient(ellipse at 30% 50%, rgba(245,158,11,0.18) 0%, var(--bg) 70%); }
+    .mk-slide.rotisseria { background: radial-gradient(ellipse at 30% 50%, rgba(249,115,22,0.18) 0%, var(--bg) 70%); }
+    .mk-slide.frios      { background: radial-gradient(ellipse at 30% 50%, rgba(234,179,8,0.18) 0%, var(--bg) 70%); }
+    .mk-slide.peixaria   { background: radial-gradient(ellipse at 30% 50%, rgba(6,182,212,0.18) 0%, var(--bg) 70%); }
+
+    .slide-inner {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      height: 100%;
+      max-width: 1600px;
+      padding: 3vh 5vw;
+      gap: 5vw;
+    }
+
+    /* Coluna de imagem */
+    .slide-img-wrap {
+      flex: 1.1;
+      height: 100%;
+      border-radius: 2.4vh;
+      overflow: hidden;
+      position: relative;
+      box-shadow: 0 8vh 8vh -3vh rgba(0,0,0,0.7);
+    }
+    .slide-img-wrap img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      transition: transform 14s ease;
+    }
+    .mk-slide.active .slide-img-wrap img { transform: scale(1.07); }
+    .slide-img-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to right, rgba(5,6,15,0.1), rgba(5,6,15,0.55));
+    }
+
+    /* Coluna de texto */
+    .slide-text-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 2.2vh;
+    }
+    .slide-sector-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.8vw;
+      padding: 0.7vh 1.5vw;
+      border-radius: 999px;
+      font-size: 1.8vh;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      width: fit-content;
+      border: 1px solid currentColor;
+    }
+    .mk-slide.general    .slide-sector-badge { color: var(--c-general);    background: rgba(56,189,248,0.1); }
+    .mk-slide.acougue    .slide-sector-badge { color: var(--c-acougue);    background: rgba(239,68,68,0.1); }
+    .mk-slide.padaria    .slide-sector-badge { color: var(--c-padaria);    background: rgba(245,158,11,0.1); }
+    .mk-slide.rotisseria .slide-sector-badge { color: var(--c-rotisseria); background: rgba(249,115,22,0.1); }
+    .mk-slide.frios      .slide-sector-badge { color: var(--c-frios);      background: rgba(234,179,8,0.1); }
+    .mk-slide.peixaria   .slide-sector-badge { color: var(--c-peixaria);   background: rgba(6,182,212,0.1); }
+
+    .slide-product-name {
+      font-family: var(--font-display);
+      font-size: 9vh;
+      line-height: 0.95;
+      letter-spacing: 0.02em;
+      color: var(--text);
+    }
+    .slide-tagline {
+      font-size: 2.2vh;
+      color: var(--muted);
+      font-weight: 400;
+      line-height: 1.5;
+      max-width: 38vw;
+    }
+    .slide-price-wrap {
+      display: flex;
+      align-items: baseline;
+      gap: 0.6vw;
+      margin-top: 1.5vh;
+    }
+    .slide-price-rs   { font-size: 3vh; font-weight: 600; color: var(--muted); }
+    .slide-price-val  { font-family: var(--font-display); font-size: 14vh; line-height: 1; }
+    .slide-price-unit { font-size: 2.4vh; font-weight: 600; color: var(--muted); }
+
+    .mk-slide.acougue    .slide-price-val { color: var(--c-acougue);    text-shadow: 0 0 50px rgba(239,68,68,0.5); }
+    .mk-slide.padaria    .slide-price-val { color: var(--c-padaria);    text-shadow: 0 0 50px rgba(245,158,11,0.5); }
+    .mk-slide.rotisseria .slide-price-val { color: var(--c-rotisseria); text-shadow: 0 0 50px rgba(249,115,22,0.5); }
+    .mk-slide.frios      .slide-price-val { color: var(--c-frios);      text-shadow: 0 0 50px rgba(234,179,8,0.5); }
+    .mk-slide.peixaria   .slide-price-val { color: var(--c-peixaria);   text-shadow: 0 0 50px rgba(6,182,212,0.5); }
+
+    /* Slide geral: QR Code + CTA */
+    .slide-qr-section {
+      display: flex;
+      align-items: center;
+      gap: 3vw;
+      flex: 1;
+    }
+    .slide-qr-card {
+      background: #fff;
+      padding: 2.5vh;
+      border-radius: 2.4vh;
+      box-shadow: 0 4vh 8vh rgba(0,0,0,0.6), 0 0 0 4px rgba(56,189,248,0.2);
+    }
+    .slide-qr-card canvas { display: block; }
+    .slide-general-cta {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2vh;
+    }
+    .slide-general-headline {
+      font-family: var(--font-display);
+      font-size: 8vh;
+      line-height: 0.95;
+      background: linear-gradient(135deg, #38bdf8, #818cf8, #c084fc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .slide-general-sub {
+      font-size: 2.3vh;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    .slide-general-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 1.2vh;
+      margin-top: 0.5vh;
+    }
+    .slide-step {
+      display: flex;
+      align-items: center;
+      gap: 1.2vw;
+      font-size: 2vh;
+      color: rgba(255,255,255,0.7);
+    }
+    .slide-step-num {
+      width: 3.5vh; height: 3.5vh;
+      border-radius: 50%;
+      background: rgba(56,189,248,0.15);
+      border: 1px solid rgba(56,189,248,0.4);
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 1.7vh;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+
+    /* Progress Bar dos slides */
+    #slide-progress-bar {
+      position: absolute;
+      bottom: 0; left: 0;
+      height: 3px;
+      background: linear-gradient(to right, var(--accent), #818cf8);
+      width: 0%;
+      transition: width linear;
+      z-index: 5;
+    }
+
+    /* Dots de navegação */
+    #slide-dots {
+      position: absolute;
+      bottom: 2.5vh;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 0.8vw;
+      z-index: 5;
+    }
+    .slide-dot {
+      width: 0.8vh; height: 0.8vh;
+      border-radius: 50%;
+      background: var(--muted);
+      transition: all 0.4s ease;
+    }
+    .slide-dot.active {
+      background: var(--text);
+      width: 3vw;
+      border-radius: 999px;
+    }
+
+    /* ─── OVERLAY DE CHAMADA ───────────────────────── */
+    #tv-call-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s cubic-bezier(0.16,1,0.3,1);
+      overflow: hidden;
+    }
+    #tv-call-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* Fundo animado do overlay */
+    .call-bg {
+      position: absolute;
+      inset: 0;
+      background: var(--bg);
+    }
+    .call-bg-glow {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 0.5s;
+    }
+    #tv-call-overlay.active .call-bg-glow { opacity: 1; }
+    #tv-call-overlay.acougue    .call-bg-glow { background: radial-gradient(ellipse at 50% 50%, rgba(239,68,68,0.22) 0%, transparent 70%); }
+    #tv-call-overlay.padaria    .call-bg-glow { background: radial-gradient(ellipse at 50% 50%, rgba(245,158,11,0.22) 0%, transparent 70%); }
+    #tv-call-overlay.rotisseria .call-bg-glow { background: radial-gradient(ellipse at 50% 50%, rgba(249,115,22,0.22) 0%, transparent 70%); }
+    #tv-call-overlay.frios      .call-bg-glow { background: radial-gradient(ellipse at 50% 50%, rgba(234,179,8,0.22) 0%, transparent 70%); }
+    #tv-call-overlay.peixaria   .call-bg-glow { background: radial-gradient(ellipse at 50% 50%, rgba(6,182,212,0.22) 0%, transparent 70%); }
+    #tv-call-overlay.general    .call-bg-glow { background: radial-gradient(ellipse at 50% 50%, rgba(56,189,248,0.22) 0%, transparent 70%); }
+
+    /* Conteúdo do card de chamada */
+    .call-content {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3vh;
+      animation: callEntrance 0.6s cubic-bezier(0.16,1,0.3,1) both;
+    }
+    @keyframes callEntrance {
+      from { transform: scale(0.85) translateY(4vh); opacity: 0; }
+      to   { transform: scale(1) translateY(0); opacity: 1; }
+    }
+
+    .call-label {
+      display: flex;
+      align-items: center;
+      gap: 1.2vw;
+      font-size: 2.4vh;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: var(--muted);
+    }
+    .call-label-dot {
+      width: 1.2vh; height: 1.2vh;
+      border-radius: 50%;
+      animation: blink 1s infinite;
+    }
+    #tv-call-overlay.acougue    .call-label-dot { background: var(--c-acougue); }
+    #tv-call-overlay.padaria    .call-label-dot { background: var(--c-padaria); }
+    #tv-call-overlay.rotisseria .call-label-dot { background: var(--c-rotisseria); }
+    #tv-call-overlay.frios      .call-label-dot { background: var(--c-frios); }
+    #tv-call-overlay.peixaria   .call-label-dot { background: var(--c-peixaria); }
+    #tv-call-overlay.general    .call-label-dot { background: var(--c-general); }
+
+    /* Número enorme da senha */
+    #tv-main-ticket {
+      font-family: var(--font-display);
+      font-size: 34vh;
+      line-height: 0.85;
+      letter-spacing: -0.02em;
+      animation: pulseTicket 2.5s ease-in-out infinite;
+    }
+    @keyframes pulseTicket {
+      0%,100% { transform: scale(1); }
+      50%      { transform: scale(1.025); }
+    }
+
+    #tv-call-overlay.acougue    #tv-main-ticket { color: var(--c-acougue);    text-shadow: 0 0 8vh rgba(239,68,68,0.5); }
+    #tv-call-overlay.padaria    #tv-main-ticket { color: var(--c-padaria);    text-shadow: 0 0 8vh rgba(245,158,11,0.5); }
+    #tv-call-overlay.rotisseria #tv-main-ticket { color: var(--c-rotisseria); text-shadow: 0 0 8vh rgba(249,115,22,0.5); }
+    #tv-call-overlay.frios      #tv-main-ticket { color: var(--c-frios);      text-shadow: 0 0 8vh rgba(234,179,8,0.5); }
+    #tv-call-overlay.peixaria   #tv-main-ticket { color: var(--c-peixaria);   text-shadow: 0 0 8vh rgba(6,182,212,0.5); }
+    #tv-call-overlay.general    #tv-main-ticket { color: var(--c-general);    text-shadow: 0 0 8vh rgba(56,189,248,0.5); }
+
+    /* Info: setor + guichê */
+    .call-meta {
+      display: flex;
+      align-items: center;
+      gap: 2vw;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(20px);
+      padding: 1.8vh 4vw;
+      border-radius: 999px;
+    }
+    #tv-main-sector {
+      font-size: 3.2vh;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .call-meta-sep { width: 1px; height: 3.5vh; background: var(--border); }
+    #tv-main-guiche {
+      font-size: 3vh;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    /* Linha decorativa horizontal */
+    .call-divider {
+      width: 20vw;
+      height: 2px;
+      border-radius: 999px;
+      background: linear-gradient(to right, transparent, var(--border), transparent);
+    }
+
+    /* ─── PAINEL DE HISTÓRICO ──────────────────────── */
+    #tv-history-panel {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5vw;
+      padding: 1.8vh 2.5vw;
+      background: rgba(0,0,0,0.45);
+      border-top: 1px solid var(--border);
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+
+    .history-item {
+      display: flex;
+      align-items: center;
+      gap: 1.8vw;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 1.4vh;
+      padding: 1.5vh 2vw;
+      position: relative;
+      overflow: hidden;
+      transition: opacity 0.4s;
+    }
+    .history-item::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 4px;
+      border-radius: 0 2px 2px 0;
+    }
+    .history-item.acougue::before    { background: var(--c-acougue); }
+    .history-item.padaria::before    { background: var(--c-padaria); }
+    .history-item.rotisseria::before { background: var(--c-rotisseria); }
+    .history-item.frios::before      { background: var(--c-frios); }
+    .history-item.peixaria::before   { background: var(--c-peixaria); }
+    .history-item.general::before    { background: var(--c-general); }
+
+    .history-num {
+      font-family: var(--font-display);
+      font-size: 7vh;
+      line-height: 1;
+      min-width: 12vw;
+      text-align: center;
+    }
+    .history-item.acougue    .history-num { color: var(--c-acougue); }
+    .history-item.padaria    .history-num { color: var(--c-padaria); }
+    .history-item.rotisseria .history-num { color: var(--c-rotisseria); }
+    .history-item.frios      .history-num { color: var(--c-frios); }
+    .history-item.peixaria   .history-num { color: var(--c-peixaria); }
+
+    .history-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4vh;
+      overflow: hidden;
+    }
+    .history-sector {
+      font-size: 1.8vh;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .history-guiche {
+      font-size: 2.2vh;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+    }
+    .history-time {
+      font-size: 1.5vh;
+      color: var(--muted);
+      margin-top: 0.2vh;
+    }
+    .history-tag {
+      position: absolute;
+      top: 1.2vh; right: 1.2vw;
+      font-size: 1.3vh;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+    .history-item:first-child .history-tag { color: var(--accent); }
+
+    /* Placeholder vazio */
+    .history-empty {
+      opacity: 0.2;
+      pointer-events: none;
+    }
+
+    /* ─── CONTROLE DE VOZ ─────────────────────────── */
+    #voice-control {
+      position: fixed;
+      bottom: 2vh; right: 2vw;
+      background: rgba(5,6,15,0.85);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(16px);
+      border-radius: 999px;
+      padding: 1.2vh 1.8vw;
+      display: flex; align-items: center; gap: 0.8vw;
+      font-size: 1.6vh; font-weight: 600;
+      cursor: pointer; z-index: 100;
+      transition: border-color 0.3s;
+    }
+    #voice-control:hover { border-color: rgba(255,255,255,0.2); }
+    #voice-dot {
+      width: 1vh; height: 1vh; border-radius: 50%;
+    }
+    #voice-dot.on  { background: #22c55e; box-shadow: 0 0 8px #22c55e; }
+    #voice-dot.off { background: #ef4444; }
+
+    /* Flash de nova senha */
+    @keyframes tvFlash {
+      0%,100% { background: var(--bg); }
+      30%      { background: rgba(255,255,255,0.06); }
+    }
+    .tv-flash { animation: tvFlash 0.45s ease-out 3; }
+  </style>
 </head>
-<body class="tv-layout">
+<body>
 
-  <!-- Painel Principal (Propagandas ou Chamada Ativa) -->
-  <div class="tv-main-call" id="tv-main-card">
-    
-    <!-- Carrossel de Ofertas / Marketing -->
-    <div class="tv-marketing-slider" id="tv-marketing-slider">
-      <!-- Slide Geral -->
-      <div class="marketing-slide general active">
-        <div class="slide-content-split">
-          <div class="slide-qr-box">
-            <canvas id="qr-tv-general"></canvas>
-          </div>
-          <div class="slide-info-col">
-            <div class="promo-title" id="tv-title-store">Supermercado ProNext</div>
-            <div class="promo-product">Evite Filas em Pé!</div>
-            <p style="font-size: 1.6rem; color: var(--text-secondary); line-height: 1.6;">
-              <i class="fa-solid fa-qrcode" style="color: #38bdf8; margin-right: 0.5rem;"></i>
-              Escaneie o QR Code ao lado para retirar sua senha de qualquer setor no seu celular e continue suas compras com total comodidade.
-            </p>
-          </div>
-        </div>
+<div id="tv-root">
+
+  <!-- ── TOPBAR ── -->
+  <header id="tv-topbar">
+    <div class="topbar-brand">
+      <i class="fa-solid fa-layer-group" style="color:var(--accent)"></i>
+      Fila<span>Pro</span>
+    </div>
+
+    <div class="topbar-store">
+      <i class="fa-solid fa-store" style="color:var(--accent); margin-right:0.5vw"></i>
+      <span id="tv-store-name">Carregando...</span>
+    </div>
+
+    <div class="topbar-clock">
+      <div>
+        <div id="tv-clock">--:--</div>
+        <div id="tv-date">---</div>
       </div>
+      <div class="topbar-dot"></div>
+    </div>
+  </header>
 
-      <!-- Slide Açougue -->
-      <div class="marketing-slide acougue">
-        <div class="slide-content-split">
-          <div class="slide-image-col">
-            <img src="/images/picanha.png" alt="Picanha Premium">
+  <!-- ── ÁREA DO SLIDER ── -->
+  <div id="tv-slider-area">
+
+    <!-- Slide Geral (QR Code) -->
+    <div class="mk-slide general active" data-index="0">
+      <div class="slide-inner" style="justify-content:center; gap:6vw;">
+        <div class="slide-qr-card">
+          <canvas id="qr-tv-general"></canvas>
+        </div>
+        <div class="slide-general-cta">
+          <div class="slide-sector-badge">
+            <i class="fa-solid fa-mobile-screen-button"></i> Retire sua senha
           </div>
-          <div class="slide-info-col">
-            <div class="promo-title">Oferta Especial - Açougue</div>
-            <div class="promo-product">Picanha Bovina Premium</div>
-            <div class="promo-price-box">
-              <span class="promo-rs">R$</span>
-              <span class="promo-price">59,90</span>
-              <span class="promo-unit">/ kg</span>
+          <div class="slide-general-headline" id="tv-title-store">Supermercado<br>ProNext</div>
+          <p class="slide-general-sub">Escaneie o QR Code, retire sua senha em qualquer setor e continue fazendo suas compras com liberdade.</p>
+          <div class="slide-general-steps">
+            <div class="slide-step">
+              <div class="slide-step-num">1</div>
+              Aponte a câmera do celular para o QR Code
             </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Slide Padaria -->
-      <div class="marketing-slide padaria">
-        <div class="slide-content-split">
-          <div class="slide-image-col">
-            <img src="/images/paodequeijo.png" alt="Pão de Queijo">
-          </div>
-          <div class="slide-info-col">
-            <div class="promo-title">Saindo do Forno - Padaria</div>
-            <div class="promo-product">Pão de Queijo Tradicional</div>
-            <div class="promo-price-box">
-              <span class="promo-rs">R$</span>
-              <span class="promo-price">24,90</span>
-              <span class="promo-unit">/ kg</span>
+            <div class="slide-step">
+              <div class="slide-step-num">2</div>
+              Escolha o setor e retire sua senha
             </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Slide Rotisseria -->
-      <div class="marketing-slide rotisseria">
-        <div class="slide-content-split">
-          <div class="slide-image-col">
-            <img src="/images/rotisseria.png" alt="Frango Assado">
-          </div>
-          <div class="slide-info-col">
-            <div class="promo-title">Prato do Dia - Rotisseria</div>
-            <div class="promo-product">Frango Assado com Batatas</div>
-            <div class="promo-price-box">
-              <span class="promo-rs">R$</span>
-              <span class="promo-price">34,90</span>
-              <span class="promo-unit">/ un</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Slide Frios -->
-      <div class="marketing-slide frios">
-        <div class="slide-content-split">
-          <div class="slide-image-col">
-            <img src="/images/frios.png" alt="Tábua de Frios">
-          </div>
-          <div class="slide-info-col">
-            <div class="promo-title">Oferta do Fim de Semana - Frios</div>
-            <div class="promo-product">Tábua de Frios Premium</div>
-            <div class="promo-price-box">
-              <span class="promo-rs">R$</span>
-              <span class="promo-price">18,90</span>
-              <span class="promo-unit">/ 100g</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Slide Peixaria -->
-      <div class="marketing-slide peixaria">
-        <div class="slide-content-split">
-          <div class="slide-image-col">
-            <img src="/images/salmao.png" alt="Salmão Chileno">
-          </div>
-          <div class="slide-info-col">
-            <div class="promo-title">Fresco da Semana - Peixaria</div>
-            <div class="promo-product">Filé de Salmão Chileno</div>
-            <div class="promo-price-box">
-              <span class="promo-rs">R$</span>
-              <span class="promo-price">69,90</span>
-              <span class="promo-unit">/ kg</span>
+            <div class="slide-step">
+              <div class="slide-step-num">3</div>
+              Aguarde o aviso no celular — sem ficar parado!
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Overlay de Chamada de Senha Ativa (Card centralizado) -->
-    <div class="tv-active-call-overlay" id="tv-call-overlay">
-      <div class="tv-call-card">
-        <div class="tv-call-header">
+    <!-- Slide Açougue -->
+    <div class="mk-slide acougue" data-index="1">
+      <div class="slide-inner">
+        <div class="slide-img-wrap">
+          <img src="/images/picanha.png" alt="Picanha Premium">
+          <div class="slide-img-overlay"></div>
+        </div>
+        <div class="slide-text-wrap">
+          <div class="slide-sector-badge"><i class="fa-solid fa-fire"></i> Açougue</div>
+          <div class="slide-product-name">Picanha<br>Bovina<br>Premium</div>
+          <p class="slide-tagline">Corte nobre, sabor incomparável. Selecionada diariamente pelo nosso time de especialistas.</p>
+          <div class="slide-price-wrap">
+            <span class="slide-price-rs">R$</span>
+            <span class="slide-price-val">59,90</span>
+            <span class="slide-price-unit">/ kg</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide Padaria -->
+    <div class="mk-slide padaria" data-index="2">
+      <div class="slide-inner">
+        <div class="slide-img-wrap">
+          <img src="/images/paodequeijo.png" alt="Pão de Queijo">
+          <div class="slide-img-overlay"></div>
+        </div>
+        <div class="slide-text-wrap">
+          <div class="slide-sector-badge"><i class="fa-solid fa-bread-slice"></i> Padaria</div>
+          <div class="slide-product-name">Pão de<br>Queijo<br>Tradicional</div>
+          <p class="slide-tagline">Saindo do forno agora. Crocante por fora, macio e derretendo por dentro — como deve ser.</p>
+          <div class="slide-price-wrap">
+            <span class="slide-price-rs">R$</span>
+            <span class="slide-price-val">24,90</span>
+            <span class="slide-price-unit">/ kg</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide Rotisseria -->
+    <div class="mk-slide rotisseria" data-index="3">
+      <div class="slide-inner">
+        <div class="slide-img-wrap">
+          <img src="/images/rotisseria.png" alt="Frango Assado">
+          <div class="slide-img-overlay"></div>
+        </div>
+        <div class="slide-text-wrap">
+          <div class="slide-sector-badge"><i class="fa-solid fa-drumstick-bite"></i> Rotisseria</div>
+          <div class="slide-product-name">Frango<br>Assado<br>Completo</div>
+          <p class="slide-tagline">Preparado artesanalmente com temperos especiais da casa. O prato do dia que todo mundo ama.</p>
+          <div class="slide-price-wrap">
+            <span class="slide-price-rs">R$</span>
+            <span class="slide-price-val">34,90</span>
+            <span class="slide-price-unit">/ un</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide Frios -->
+    <div class="mk-slide frios" data-index="4">
+      <div class="slide-inner">
+        <div class="slide-img-wrap">
+          <img src="/images/frios.png" alt="Tábua de Frios">
+          <div class="slide-img-overlay"></div>
+        </div>
+        <div class="slide-text-wrap">
+          <div class="slide-sector-badge"><i class="fa-solid fa-cheese"></i> Frios</div>
+          <div class="slide-product-name">Frios &<br>Laticínios<br>Importados</div>
+          <p class="slide-tagline">A melhor seleção de queijos, presuntos e embutidos especiais. Oferta do fim de semana.</p>
+          <div class="slide-price-wrap">
+            <span class="slide-price-rs">R$</span>
+            <span class="slide-price-val">18,90</span>
+            <span class="slide-price-unit">/ 100g</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide Peixaria -->
+    <div class="mk-slide peixaria" data-index="5">
+      <div class="slide-inner">
+        <div class="slide-img-wrap">
+          <img src="/images/salmao.png" alt="Filé de Salmão">
+          <div class="slide-img-overlay"></div>
+        </div>
+        <div class="slide-text-wrap">
+          <div class="slide-sector-badge"><i class="fa-solid fa-fish"></i> Peixaria</div>
+          <div class="slide-product-name">Filé de<br>Salmão<br>Chileno</div>
+          <p class="slide-tagline">Fresco, saudável e delicioso. Chegou hoje, vai embora rápido. Aproveite enquanto tem!</p>
+          <div class="slide-price-wrap">
+            <span class="slide-price-rs">R$</span>
+            <span class="slide-price-val">69,90</span>
+            <span class="slide-price-unit">/ kg</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Progress bar e dots -->
+    <div id="slide-progress-bar"></div>
+    <div id="slide-dots">
+      <div class="slide-dot active"></div>
+      <div class="slide-dot"></div>
+      <div class="slide-dot"></div>
+      <div class="slide-dot"></div>
+      <div class="slide-dot"></div>
+      <div class="slide-dot"></div>
+    </div>
+
+    <!-- Overlay de chamada de senha -->
+    <div id="tv-call-overlay">
+      <div class="call-bg"></div>
+      <div class="call-bg-glow"></div>
+      <div class="call-content">
+        <div class="call-label">
+          <div class="call-label-dot"></div>
           <i class="fa-solid fa-bullhorn"></i>
-          <span>Senha Chamada</span>
+          Senha Chamada
+          <div class="call-label-dot"></div>
         </div>
-        
-        <div class="tv-ticket-display" id="tv-main-ticket">---</div>
-        
-        <div class="tv-details-display">
-          <span id="tv-main-sector">Aguardando Chamada</span>
-          <span class="tv-badge" id="tv-main-guiche">Guichê --</span>
+        <div class="call-divider"></div>
+        <div id="tv-main-ticket">---</div>
+        <div class="call-divider"></div>
+        <div class="call-meta">
+          <span id="tv-main-sector">Aguardando</span>
+          <div class="call-meta-sep"></div>
+          <span id="tv-main-guiche">Guichê --</span>
         </div>
       </div>
     </div>
 
+  </div><!-- /slider-area -->
+
+  <!-- ── HISTÓRICO ── -->
+  <div id="tv-history-panel">
+    <div class="history-item history-empty">
+      <div class="history-num" style="color:var(--muted)">---</div>
+      <div class="history-info">
+        <div class="history-sector">Aguardando</div>
+        <div class="history-guiche">—</div>
+      </div>
+    </div>
+    <div class="history-item history-empty">
+      <div class="history-num" style="color:var(--muted)">---</div>
+      <div class="history-info">
+        <div class="history-sector">Aguardando</div>
+        <div class="history-guiche">—</div>
+      </div>
+    </div>
+    <div class="history-item history-empty">
+      <div class="history-num" style="color:var(--muted)">---</div>
+      <div class="history-info">
+        <div class="history-sector">Aguardando</div>
+        <div class="history-guiche">—</div>
+      </div>
+    </div>
   </div>
 
-  <!-- Painel Inferior de Histórico -->
-  <div class="tv-history-panel" id="tv-history-list">
-    <!-- Renderizado dinamicamente via JS -->
-    <div class="history-card" style="opacity: 0.3;">
-      <div class="history-ticket">---</div>
-      <div class="history-label">Aguardando...</div>
-    </div>
-    <div class="history-card" style="opacity: 0.3;">
-      <div class="history-ticket">---</div>
-      <div class="history-label">Aguardando...</div>
-    </div>
-    <div class="history-card" style="opacity: 0.3;">
-      <div class="history-ticket">---</div>
-      <div class="history-label">Aguardando...</div>
-    </div>
-  </div>
+</div><!-- /tv-root -->
 
-  <!-- Controle Flutuante de Voz/Som -->
-  <div class="tv-voice-control" id="voice-control" title="Clique para ativar/desativar avisos por voz">
-    <div class="tv-voice-dot muted" id="voice-dot"></div>
-    <span id="voice-status-text" style="color: var(--text-secondary); font-weight: 600;">Clique para Ativar Som</span>
-    <i class="fa-solid fa-volume-high" style="color: var(--text-secondary);"></i>
-  </div>
+<!-- Controle de Voz -->
+<div id="voice-control" title="Ativar/desativar som">
+  <div id="voice-dot" class="off"></div>
+  <span id="voice-status-text">Clique para ativar som</span>
+  <i class="fa-solid fa-volume-xmark" id="voice-icon"></i>
+</div>
 
-  <!-- Carrega socket.io cliente servido automaticamente pelo backend -->
-  <script src="/socket.io/socket.io.js"></script>
-  <!-- Carrega script da TV -->
-  <script src="/js/tv.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/tv.js"></script>
 </body>
 </html>

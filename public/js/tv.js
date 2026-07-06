@@ -1,58 +1,108 @@
 const socket = io();
 
-// Elementos da Interface
-const elMainContainer = document.getElementById('tv-main-card');
-const elCallOverlay = document.getElementById('tv-call-overlay');
-const elMainTicket = document.getElementById('tv-main-ticket');
-const elMainSector = document.getElementById('tv-main-sector');
-const elMainGuiche = document.getElementById('tv-main-guiche');
-const elHistoryContainer = document.getElementById('tv-history-list');
-const elVoiceControl = document.getElementById('voice-control');
+// ─── Elementos da Interface ──────────────────────────────
+const elCallOverlay   = document.getElementById('tv-call-overlay');
+const elMainTicket    = document.getElementById('tv-main-ticket');
+const elMainSector    = document.getElementById('tv-main-sector');
+const elMainGuiche    = document.getElementById('tv-main-guiche');
+const elHistoryPanel  = document.getElementById('tv-history-panel');
+const elVoiceControl  = document.getElementById('voice-control');
 const elVoiceStatusText = document.getElementById('voice-status-text');
-const elVoiceDot = document.getElementById('voice-dot');
+const elVoiceDot      = document.getElementById('voice-dot');
+const elVoiceIcon     = document.getElementById('voice-icon');
+const elProgressBar   = document.getElementById('slide-progress-bar');
+const elSliderArea    = document.getElementById('tv-slider-area');
 
-// Variáveis de Controle
+// ─── Estado ─────────────────────────────────────────────
 let soundEnabled = false;
-let callTimeout = null;
+let callTimeout  = null;
 let currentSlideIndex = 0;
 let slideInterval = null;
-const slides = document.querySelectorAll('.marketing-slide');
+let progressAnimation = null;
 
-// Inicia rotação das propagandas
+const SLIDE_DURATION = 7000; // ms por slide
+const slides = document.querySelectorAll('.mk-slide');
+const dots   = document.querySelectorAll('.slide-dot');
+
+// ─── Relógio em Tempo Real ───────────────────────────────
+function updateClock() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2, '0');
+  const m = String(now.getMinutes()).padStart(2, '0');
+  const s = String(now.getSeconds()).padStart(2, '0');
+
+  const elClock = document.getElementById('tv-clock');
+  const elDate  = document.getElementById('tv-date');
+  if (elClock) elClock.textContent = `${h}:${m}:${s}`;
+
+  if (elDate) {
+    const days = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+    const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    elDate.textContent = `${days[now.getDay()]}, ${now.getDate()} de ${months[now.getMonth()]}`;
+  }
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+// ─── Carrossel com Progress Bar ──────────────────────────
+function goToSlide(index) {
+  slides[currentSlideIndex].classList.remove('active');
+  dots[currentSlideIndex].classList.remove('active');
+
+  currentSlideIndex = (index + slides.length) % slides.length;
+
+  slides[currentSlideIndex].classList.add('active');
+  dots[currentSlideIndex].classList.add('active');
+
+  startProgressBar();
+}
+
+function startProgressBar() {
+  if (progressAnimation) cancelAnimationFrame(progressAnimation);
+  elProgressBar.style.transition = 'none';
+  elProgressBar.style.width = '0%';
+
+  // força reflow antes de ativar a transição
+  void elProgressBar.offsetWidth;
+  elProgressBar.style.transition = `width ${SLIDE_DURATION}ms linear`;
+  elProgressBar.style.width = '100%';
+}
+
 function startSlideshow() {
   if (slideInterval) clearInterval(slideInterval);
+  startProgressBar();
   slideInterval = setInterval(() => {
-    slides[currentSlideIndex].classList.remove('active');
-    currentSlideIndex = (currentSlideIndex + 1) % slides.length;
-    slides[currentSlideIndex].classList.add('active');
-  }, 6000); // Troca de slide a cada 6 segundos
+    goToSlide(currentSlideIndex + 1);
+  }, SLIDE_DURATION);
 }
 
-// Pausa carrossel (quando há senha em exibição)
 function pauseSlideshow() {
   if (slideInterval) clearInterval(slideInterval);
+  slideInterval = null;
+  if (progressAnimation) cancelAnimationFrame(progressAnimation);
+  elProgressBar.style.transition = 'none';
+  elProgressBar.style.width = '0%';
 }
 
-// Inicia carrossel no carregamento
+// Inicia carrossel
 startSlideshow();
 
-// Helper robusto para desenhar o QR Code ou exibir fallback de texto caso a biblioteca falhe no download (offline)
+// ─── QR Code ─────────────────────────────────────────────
 function generateQrOnCanvas(canvasId, value) {
   const canvas = document.getElementById(canvasId);
   if (!canvas) return;
-  
+
   if (typeof QRious !== 'undefined') {
     try {
       new QRious({
         element: canvas,
         value: value,
-        size: 240,
+        size: 260,
         background: '#ffffff',
-        foreground: '#0f111a',
+        foreground: '#05060f',
         level: 'H'
       });
     } catch (e) {
-      console.error('Erro ao instanciar QRious:', e);
       drawFallbackText(canvas, value);
     }
   } else {
@@ -62,211 +112,190 @@ function generateQrOnCanvas(canvasId, value) {
 
 function drawFallbackText(canvas, value) {
   const ctx = canvas.getContext('2d');
-  canvas.width = 240;
-  canvas.height = 240;
+  canvas.width = 260; canvas.height = 260;
   ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, 240, 240);
-  
-  // Bordas pretas simulando layout
-  ctx.strokeStyle = '#0f111a';
-  ctx.lineWidth = 4;
-  ctx.strokeRect(4, 4, 232, 232);
-  
-  ctx.fillStyle = '#0f111a';
-  ctx.font = 'bold 15px Outfit, sans-serif';
+  ctx.fillRect(0, 0, 260, 260);
+  ctx.fillStyle = '#05060f';
+  ctx.font = 'bold 14px Outfit, sans-serif';
   ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('Acesse a fila em:', 120, 80);
-  
+  ctx.fillText('Acesse:', 130, 90);
   ctx.fillStyle = '#38bdf8';
-  ctx.font = 'bold 16px Outfit, sans-serif';
-  // Encurta a exibição se for muito longa
-  const displayUrl = value.replace('http://', '');
-  ctx.fillText(displayUrl, 120, 120);
-  
-  ctx.fillStyle = '#6b7280';
-  ctx.font = '11px Outfit, sans-serif';
-  ctx.fillText('Conecte no mesmo Wi-Fi', 120, 160);
+  ctx.font = 'bold 13px Outfit, sans-serif';
+  ctx.fillText(value.replace('http://', '').slice(0, 30), 130, 130);
 }
 
-// Obter loja a partir da URL (ex: /tv/machado-tarumas)
+// ─── Rota e Configuração ─────────────────────────────────
 const pathParts = window.location.pathname.split('/');
 const storeSlug = pathParts[2] || '';
 
-// Carrega IP de rede do servidor para gerar o QR Code de autoatendimento na TV
 fetch('/api/config')
   .then(res => res.json())
   .then(config => {
-    // Atualiza título da TV com o nome da loja
     const storeObj = config.stores[storeSlug];
+
+    // Nome da loja na topbar e no slide geral
     if (storeObj) {
-      const elStoreTitle = document.getElementById('tv-title-store');
-      if (elStoreTitle) elStoreTitle.textContent = storeObj.name;
+      const elTopbarStore = document.getElementById('tv-store-name');
+      const elSlideTitle  = document.getElementById('tv-title-store');
+      if (elTopbarStore) elTopbarStore.textContent = storeObj.name;
+      if (elSlideTitle)  elSlideTitle.innerHTML = storeObj.name.replace(' ', '<br>');
     }
-    
-    // QR Code direciona para a home com a filial pré-selecionada
-    const baseUrl = `http://${config.localIp}:${config.port}/?loja=${storeSlug}`;
-    generateQrOnCanvas('qr-tv-general', baseUrl);
+
+    // QR Code: usa IP local para rede interna (celular do cliente na loja)
+    const qrUrl = `http://${config.localIp}:${config.port}/?loja=${storeSlug}`;
+    generateQrOnCanvas('qr-tv-general', qrUrl);
   })
-  .catch(err => {
-    console.error('Erro ao buscar configuração de IP da TV:', err);
-    generateQrOnCanvas('qr-tv-general', window.location.origin + `/?loja=${storeSlug}`);
+  .catch(() => {
+    generateQrOnCanvas('qr-tv-general', `${window.location.origin}/?loja=${storeSlug}`);
   });
 
-// Registro inicial da TV no servidor
+// ─── Socket.io ───────────────────────────────────────────
 socket.on('connect', () => {
-  console.log(`TV Conectada ao Socket.io. Registrando na filial: ${storeSlug}`);
+  console.log(`TV conectada. Filial: ${storeSlug}`);
   socket.emit('register_tv', { loja: storeSlug });
 });
 
-// Recebe o estado inicial
 socket.on('initial_state', ({ globalHistory }) => {
-  updateDisplay(globalHistory);
+  renderHistory(globalHistory);
 });
 
-// Recebe notificações de chamada em tempo real
 socket.on('play_call', ({ ticket, isRecall, globalHistory }) => {
-  console.log('Nova chamada recebida:', ticket);
-  
-  // Atualiza painel principal e histórico
-  updateDisplay(globalHistory, ticket);
-  
-  // Efeito visual de Flash no container principal
-  elMainContainer.classList.remove('tv-flash');
-  void elMainContainer.offsetWidth; // Força reflow para reiniciar animação
-  elMainContainer.classList.add('tv-flash');
-  
-  // Toca o gongo e fala a senha (se som estiver ativado)
+  showCall(ticket);
+  renderHistory(globalHistory);
+
+  // Flash visual
+  elSliderArea.classList.remove('tv-flash');
+  void elSliderArea.offsetWidth;
+  elSliderArea.classList.add('tv-flash');
+
   if (soundEnabled) {
     playChime();
-    
-    // Pequeno delay entre o gongo e a voz para não misturar
-    setTimeout(() => {
-      speakTicket(ticket);
-    }, 1200);
+    setTimeout(() => speakTicket(ticket), 1200);
   }
 });
 
-// Atualiza o estado visual das senhas na tela
-function updateDisplay(historyList, currentTicket = null) {
-  if (currentTicket) {
-    elMainTicket.textContent = currentTicket.formatted;
-    elMainSector.textContent = currentTicket.sectorName;
-    elMainGuiche.textContent = `Guichê ${currentTicket.guiche}`;
-    
-    // Configura classes de estilo e ativa o overlay de chamada
-    elCallOverlay.className = 'tv-active-call-overlay active ' + currentTicket.sector;
-    
-    // Pausa as propagandas enquanto a senha está em destaque
-    pauseSlideshow();
-    
-    // Oculta o overlay após 12 segundos, retornando às propagandas
-    if (callTimeout) clearTimeout(callTimeout);
-    callTimeout = setTimeout(() => {
-      elCallOverlay.classList.remove('active');
-      elCallOverlay.classList.remove('acougue', 'padaria', 'peixaria');
-      startSlideshow();
-    }, 12000);
-  }
-  
-  // Renderiza o Histórico das últimas 3 senhas no rodapé (sempre visível)
-  elHistoryContainer.innerHTML = '';
-  
-  // Mostra as últimas 3 senhas chamadas do histórico global
-  const historyToRender = historyList.slice(0, 3);
-  
-  historyToRender.forEach((item) => {
-    const card = document.createElement('div');
-    card.className = `history-card ${item.sector}`;
-    card.innerHTML = `
-      <div class="history-ticket">${item.formatted}</div>
-      <div class="history-label">${item.sectorName} - G. ${item.guiche}</div>
+// ─── Exibição da Senha ───────────────────────────────────
+function showCall(ticket) {
+  elMainTicket.textContent = ticket.formatted;
+  elMainSector.textContent = ticket.sectorName;
+  elMainGuiche.textContent = `Guichê ${ticket.guiche}`;
+
+  // Remove classes de setor anteriores e aplica o novo
+  elCallOverlay.className = `active ${ticket.sector}`;
+  elCallOverlay.id = 'tv-call-overlay';
+
+  pauseSlideshow();
+
+  if (callTimeout) clearTimeout(callTimeout);
+  callTimeout = setTimeout(() => {
+    elCallOverlay.classList.remove('active');
+    startSlideshow();
+  }, 12000);
+}
+
+// ─── Histórico ───────────────────────────────────────────
+function renderHistory(historyList = []) {
+  const items = historyList.slice(0, 3);
+  elHistoryPanel.innerHTML = '';
+
+  items.forEach((item, idx) => {
+    const timeAgo = formatTimeAgo(item.calledAt);
+    const div = document.createElement('div');
+    div.className = `history-item ${item.sector}`;
+    div.innerHTML = `
+      <div class="history-num">${item.formatted}</div>
+      <div class="history-info">
+        <div class="history-sector">${item.sectorName}</div>
+        <div class="history-guiche">Guichê ${item.guiche}</div>
+        <div class="history-time">${timeAgo}</div>
+      </div>
+      <div class="history-tag">${idx === 0 ? '● Último' : `${idx + 1}º`}</div>
     `;
-    elHistoryContainer.appendChild(card);
+    elHistoryPanel.appendChild(div);
   });
 
-  // Se não houver itens suficientes no histórico, preenche com placeholders vazios
-  while (elHistoryContainer.children.length < 3) {
-    const placeholder = document.createElement('div');
-    placeholder.className = 'history-card';
-    placeholder.style.opacity = '0.3';
-    placeholder.innerHTML = `
-      <div class="history-ticket">---</div>
-      <div class="history-label">Aguardando...</div>
+  // Preenche com placeholders se necessário
+  while (elHistoryPanel.children.length < 3) {
+    const ph = document.createElement('div');
+    ph.className = 'history-item history-empty';
+    ph.innerHTML = `
+      <div class="history-num" style="color:var(--muted)">---</div>
+      <div class="history-info">
+        <div class="history-sector">Aguardando</div>
+        <div class="history-guiche">—</div>
+      </div>
     `;
-    elHistoryContainer.appendChild(placeholder);
+    elHistoryPanel.appendChild(ph);
   }
 }
 
-// Sintetizador de Áudio nativo usando Web Audio API
+function formatTimeAgo(timestamp) {
+  if (!timestamp) return '';
+  const diff = Math.floor((Date.now() - timestamp) / 1000);
+  if (diff < 60) return `há ${diff}s`;
+  if (diff < 3600) return `há ${Math.floor(diff / 60)}min`;
+  return `há ${Math.floor(diff / 3600)}h`;
+}
+
+// ─── Áudio ───────────────────────────────────────────────
 function playChime() {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     const now = ctx.currentTime;
-    
-    // Sequência de 3 notas harmônicas ascendentes (E5 -> G5 -> C6)
     const notes = [659.25, 783.99, 1046.50];
-    const timings = [0, 0.15, 0.3];
-    
+    const timings = [0, 0.18, 0.36];
+
     notes.forEach((freq, idx) => {
-      const osc = ctx.createOscillator();
+      const osc  = ctx.createOscillator();
       const gain = ctx.createGain();
-      
       osc.type = 'sine';
       osc.frequency.setValueAtTime(freq, now + timings[idx]);
-      gain.gain.setValueAtTime(0.18, now + timings[idx]);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + timings[idx] + 0.8);
-      
+      gain.gain.setValueAtTime(0.2, now + timings[idx]);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + timings[idx] + 0.9);
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.start(now + timings[idx]);
-      osc.stop(now + timings[idx] + 0.8);
+      osc.stop(now + timings[idx] + 0.9);
     });
   } catch (err) {
-    console.error('Falha ao tocar chime da TV:', err);
+    console.error('Chime error:', err);
   }
 }
 
-// Sintetizador de Voz nativo (SpeechSynthesis)
 function speakTicket(ticket) {
   try {
-    // Ex: "A05" -> "A, zero, cinco" para soletrar legivelmente
     const letters = ticket.formatted.match(/[A-Za-z]+/)[0];
     const numbers = ticket.formatted.match(/\d+/)[0];
-    const spelledNumbers = numbers.split('').join(' ');
-    
-    const spelling = `${letters.split('').join(' ')}, ${spelledNumbers}`;
-    const text = `Senha ${spelling}, no guichê ${ticket.guiche}, setor ${ticket.sectorName}.`;
-    
-    // Cancela falas anteriores pendentes na fila
+    const spelled = `${letters.split('').join(' ')}, ${numbers.split('').join(' ')}`;
+    const text = `Senha ${spelled}, guichê ${ticket.guiche}, ${ticket.sectorName}.`;
+
     window.speechSynthesis.cancel();
-    
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'pt-BR';
-    utterance.rate = 0.85; // Fala ligeiramente mais pausada para ambientes ruidosos
-    utterance.pitch = 1.0;
-    
-    window.speechSynthesis.speak(utterance);
+    const utt = new SpeechSynthesisUtterance(text);
+    utt.lang = 'pt-BR';
+    utt.rate = 0.85;
+    window.speechSynthesis.speak(utt);
   } catch (err) {
-    console.error('Falha na síntese de voz:', err);
+    console.error('TTS error:', err);
   }
 }
 
-// Habilitação de Áudio via Interação (Políticas de segurança do navegador)
+// ─── Controle de Voz ─────────────────────────────────────
 elVoiceControl.addEventListener('click', () => {
   soundEnabled = !soundEnabled;
-  
+
   if (soundEnabled) {
-    elVoiceDot.classList.remove('muted');
+    elVoiceDot.className = 'on';
+    elVoiceDot.id = 'voice-dot';
     elVoiceStatusText.textContent = 'Som Ativado';
-    elVoiceControl.style.borderColor = 'rgba(16, 185, 129, 0.4)';
-    
-    // Executa um chime de teste para inicializar o AudioContext
+    elVoiceIcon.className = 'fa-solid fa-volume-high';
+    elVoiceControl.style.borderColor = 'rgba(34,197,94,0.4)';
     playChime();
   } else {
-    elVoiceDot.classList.add('muted');
-    elVoiceStatusText.textContent = 'Som Mutado';
-    elVoiceControl.style.borderColor = 'var(--border-glass)';
+    elVoiceDot.className = 'off';
+    elVoiceDot.id = 'voice-dot';
+    elVoiceStatusText.textContent = 'Som Desativado';
+    elVoiceIcon.className = 'fa-solid fa-volume-xmark';
+    elVoiceControl.style.borderColor = 'var(--border)';
     window.speechSynthesis.cancel();
   }
 });
