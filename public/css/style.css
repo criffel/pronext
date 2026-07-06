@@ -495,7 +495,9 @@ body.called-alert .client-ticket-number {
 
 /* Slider de Marketing/Propagandas */
 .tv-marketing-slider {
-  position: relative; /* Alterado de absolute para relative para garantir cálculo de altura do flex */
+  position: absolute; /* Ocupa todo o espaço do pai .tv-main-call que tem height: 80vh */
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   z-index: 1;
