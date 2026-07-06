@@ -6,9 +6,9 @@ const elTicketNumber = document.getElementById('ticket-number');
 const elSectorName = document.getElementById('sector-name');
 const elWaitingAhead = document.getElementById('waiting-ahead');
 const elCurrentCalled = document.getElementById('current-called');
-const elCurrentGuiche = document.getElementById('current-guiche');
+const elCurrentGuiche = document.getElementById('current-guiche'); // Mantido apenas para evitar quebras se o ID existir
 const elAlertContainer = document.getElementById('called-modal');
-const elAlertGuiche = document.getElementById('alert-guiche');
+const elAlertSector = document.getElementById('alert-sector');
 const elBtnDismiss = document.getElementById('btn-dismiss');
 
 // Obter loja e setor a partir da URL (ex: /cliente/machado-tarumas/acougue)
@@ -69,10 +69,8 @@ socket.on('queue_position', ({ position, currentCalled }) => {
   
   if (currentCalled) {
     elCurrentCalled.textContent = currentCalled.formatted;
-    elCurrentGuiche.textContent = `Guichê ${currentCalled.guiche}`;
   } else {
     elCurrentCalled.textContent = '---';
-    elCurrentGuiche.textContent = '';
   }
 });
 
@@ -82,7 +80,7 @@ socket.on('your_turn', ({ ticket, isRecall }) => {
   
   // Modifica tela para alerta
   document.body.classList.add('called-alert');
-  elAlertGuiche.textContent = ticket.guiche;
+  elAlertSector.textContent = ticket.sectorName;
   elAlertContainer.style.display = 'flex';
   
   // Executa efeitos

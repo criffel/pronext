@@ -231,7 +231,7 @@ io.on('connection', (socket) => {
 
   // Atendente chama o próximo cliente na loja
   socket.on('call_next', (data) => {
-    const { loja, sector, guiche } = data || {};
+    const { loja, sector } = data || {};
     const storeSlug = loja ? loja.toLowerCase() : '';
     if (!STORES[storeSlug] || !SECTORS[sector]) return;
 
@@ -242,7 +242,6 @@ io.on('connection', (socket) => {
 
     const ticket = queue.waiting.shift();
     ticket.status = 'called';
-    ticket.guiche = guiche;
     ticket.calledAt = Date.now();
 
     queue.called.push(ticket);
@@ -252,7 +251,6 @@ io.on('connection', (socket) => {
       formatted: ticket.formatted,
       sector: ticket.sector,
       sectorName: ticket.sectorName,
-      guiche: ticket.guiche,
       calledAt: ticket.calledAt
     });
     if (globalHistory[storeSlug].length > 10) {
@@ -264,7 +262,7 @@ io.on('connection', (socket) => {
 
   // Atendente solicita re-chamada (Recall) na loja
   socket.on('recall_ticket', (data) => {
-    const { loja, sector, guiche } = data || {};
+    const { loja, sector } = data || {};
     const storeSlug = loja ? loja.toLowerCase() : '';
     if (!STORES[storeSlug] || !SECTORS[sector]) return;
 
@@ -275,13 +273,12 @@ io.on('connection', (socket) => {
       return socket.emit('error_message', 'Nenhuma senha chamada anteriormente neste setor.');
     }
 
-    lastCalled.guiche = guiche;
     triggerCall(storeSlug, lastCalled, true);
   });
 
   // Atendente chama uma senha manual específica na loja
   socket.on('call_specific', (data) => {
-    const { loja, sector, guiche, number } = data || {};
+    const { loja, sector, number } = data || {};
     const storeSlug = loja ? loja.toLowerCase() : '';
     if (!STORES[storeSlug] || !SECTORS[sector]) return;
 
@@ -311,7 +308,6 @@ io.on('connection', (socket) => {
     }
 
     ticket.status = 'called';
-    ticket.guiche = guiche;
     ticket.calledAt = Date.now();
 
     queue.called.push(ticket);
@@ -320,7 +316,6 @@ io.on('connection', (socket) => {
       formatted: ticket.formatted,
       sector: ticket.sector,
       sectorName: ticket.sectorName,
-      guiche: ticket.guiche,
       calledAt: ticket.calledAt
     });
     if (globalHistory[storeSlug].length > 10) {

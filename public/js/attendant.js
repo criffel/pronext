@@ -4,12 +4,10 @@ const socket = io();
 const panelSetup = document.getElementById('panel-setup');
 const formSetup = document.getElementById('form-setup');
 const selectSector = document.getElementById('select-sector');
-const inputGuiche = document.getElementById('input-guiche');
 
 // Elementos do Painel do Atendente
 const panelDashboard = document.getElementById('panel-dashboard');
 const displaySector = document.getElementById('display-sector');
-const displayGuiche = document.getElementById('display-guiche');
 const displayWaitingCount = document.getElementById('display-waiting-count');
 const displayLastCalled = document.getElementById('display-last-called');
 
@@ -26,7 +24,6 @@ const pathParts = window.location.pathname.split('/');
 const storeSlug = pathParts[2] || '';
 
 let currentSector = '';
-let currentGuiche = '';
 let currentConfig = null;
 
 // Carrega os setores disponíveis da API de configuração
@@ -46,9 +43,7 @@ fetch('/api/config')
     
     // Recupera dados salvos anteriormente no localStorage
     const cachedSector = localStorage.getItem('filapro_att_sector');
-    const cachedGuiche = localStorage.getItem('filapro_att_guiche');
     if (cachedSector && config.sectors[cachedSector]) selectSector.value = cachedSector;
-    if (cachedGuiche) inputGuiche.value = cachedGuiche;
   })
   .catch(err => {
     console.error('Erro ao obter configuração de setores:', err);
@@ -59,16 +54,14 @@ formSetup.addEventListener('submit', (e) => {
   e.preventDefault();
   
   currentSector = selectSector.value;
-  currentGuiche = inputGuiche.value.trim();
   
-  if (!currentSector || !currentGuiche) {
-    alert('Por favor, preencha todos os campos.');
+  if (!currentSector) {
+    alert('Por favor, selecione um setor.');
     return;
   }
   
   // Salva no cache
   localStorage.setItem('filapro_att_sector', currentSector);
-  localStorage.setItem('filapro_att_guiche', currentGuiche);
   
   // Transiciona interfaces
   panelSetup.style.display = 'none';
@@ -79,7 +72,6 @@ formSetup.addEventListener('submit', (e) => {
     ? currentConfig.sectors[currentSector].name 
     : currentSector;
   displaySector.textContent = sectorName;
-  displayGuiche.textContent = `Guichê ${currentGuiche}`;
   
   // Aplica classe de cor do setor no container do painel
   panelDashboard.classList.add(currentSector);
@@ -117,11 +109,11 @@ socket.on('queue_update', ({ waitingCount, lastCalled, waitingList }) => {
 
 // Comandos
 btnCallNext.addEventListener('click', () => {
-  socket.emit('call_next', { loja: storeSlug, sector: currentSector, guiche: currentGuiche });
+  socket.emit('call_next', { loja: storeSlug, sector: currentSector });
 });
 
 btnRecall.addEventListener('click', () => {
-  socket.emit('recall_ticket', { loja: storeSlug, sector: currentSector, guiche: currentGuiche });
+  socket.emit('recall_ticket', { loja: storeSlug, sector: currentSector });
 });
 
 formSpecific.addEventListener('submit', (e) => {
@@ -132,7 +124,6 @@ formSpecific.addEventListener('submit', (e) => {
   socket.emit('call_specific', {
     loja: storeSlug,
     sector: currentSector,
-    guiche: currentGuiche,
     number: ticketNumber
   });
   

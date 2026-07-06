@@ -4,7 +4,6 @@ const socket = io();
 const elCallOverlay   = document.getElementById('tv-call-overlay');
 const elMainTicket    = document.getElementById('tv-main-ticket');
 const elMainSector    = document.getElementById('tv-main-sector');
-const elMainGuiche    = document.getElementById('tv-main-guiche');
 const elHistoryPanel  = document.getElementById('tv-history-panel');
 const elVoiceControl  = document.getElementById('voice-control');
 const elVoiceStatusText = document.getElementById('voice-status-text');
@@ -190,7 +189,6 @@ socket.on('play_call', ({ ticket, isRecall, globalHistory }) => {
 function showCall(ticket) {
   elMainTicket.textContent = ticket.formatted;
   elMainSector.textContent = ticket.sectorName;
-  elMainGuiche.textContent = `Guichê ${ticket.guiche}`;
 
   // Remove classes de setor anteriores e aplica o novo
   elCallOverlay.className = `active ${ticket.sector}`;
@@ -218,7 +216,6 @@ function renderHistory(historyList = []) {
       <div class="history-num">${item.formatted}</div>
       <div class="history-info">
         <div class="history-sector">${item.sectorName}</div>
-        <div class="history-guiche">Guichê ${item.guiche}</div>
         <div class="history-time">${timeAgo}</div>
       </div>
       <div class="history-tag">${idx === 0 ? '● Último' : `${idx + 1}º`}</div>
@@ -234,7 +231,6 @@ function renderHistory(historyList = []) {
       <div class="history-num" style="color:var(--muted)">---</div>
       <div class="history-info">
         <div class="history-sector">Aguardando</div>
-        <div class="history-guiche">—</div>
       </div>
     `;
     elHistoryPanel.appendChild(ph);
@@ -279,7 +275,7 @@ function speakTicket(ticket) {
     const letters = ticket.formatted.match(/[A-Za-z]+/)[0];
     const numbers = ticket.formatted.match(/\d+/)[0];
     const spelled = `${letters.split('').join(' ')}, ${numbers.split('').join(' ')}`;
-    const text = `Senha ${spelled}, guichê ${ticket.guiche}, ${ticket.sectorName}.`;
+    const text = `Senha ${spelled}, ${ticket.sectorName}.`;
 
     window.speechSynthesis.cancel();
     const utt = new SpeechSynthesisUtterance(text);
