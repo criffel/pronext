@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FilaPro - Central de Simulação</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+  <style>
+    .simulator-nav {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      width: 100%;
+      max-width: 1200px;
+    }
+    .simulator-nav .btn {
+      width: auto;
+      min-width: 240px;
+    }
+    .store-selector-card {
+      background: var(--bg-dark-card);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--border-radius-lg);
+      padding: 1.5rem 2rem;
+      width: 100%;
+      max-width: 1200px;
+      margin-bottom: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      box-shadow: var(--shadow-neon);
+    }
+    .store-selector-info h2 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #fff;
+    }
+    .store-selector-info p {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+    .store-dropdown {
+      min-width: 320px;
+      padding: 0.85rem 1.25rem;
+      border-radius: var(--border-radius-md);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: #111322;
+      color: #fff;
+      font-family: var(--font-primary);
+      font-weight: 600;
+      font-size: 1rem;
+      outline: none;
+      cursor: pointer;
+      transition: var(--transition-smooth);
+    }
+    .store-dropdown:focus {
+      border-color: #38bdf8;
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.25);
+    }
+    .wifi-alert {
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px dashed rgba(56, 189, 248, 0.3);
+      border-radius: var(--border-radius-md);
+      padding: 1rem 1.5rem;
+      margin-bottom: 2rem;
+      max-width: 800px;
+      text-align: center;
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+    }
+    .wifi-alert i {
+      color: #38bdf8;
+      font-size: 1.2rem;
+    }
+    .wifi-alert strong {
+      color: #fff;
+    }
+    .sector-icon {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+    }
+    .landing-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.5rem;
+      width: 100%;
+      max-width: 1200px;
+    }
+    .landing-card {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 2rem 1.5rem;
+    }
+    .qr-placeholder {
+      background: white;
+      padding: 0.75rem;
+      border-radius: var(--border-radius-md);
+      margin: 1.2rem 0;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      transition: var(--transition-smooth);
+    }
+    .qr-placeholder:hover {
+      transform: scale(1.05);
+    }
+    .qr-placeholder canvas {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1><i class="fa-solid fa-layer-group"></i> FilaPro</h1>
+    <p>Painel de Autoatendimento e Controle de Filas do Grupo</p>
+  </header>
+
+  <main>
+    <div class="wifi-alert">
+      <i class="fa-solid fa-wifi"></i>
+      <span>Para testar no celular, conecte no mesmo Wi-Fi. IP local: <strong id="server-ip">Carregando...</strong></span>
+    </div>
+
+    <!-- Seletor Corporativo de Filial -->
+    <div class="store-selector-card">
+      <div class="store-selector-info">
+        <h2>Selecione a Filial Física</h2>
+        <p>A TV, Atendentes e Clientes serão isolados para a filial selecionada.</p>
+      </div>
+      <select id="store-select" class="store-dropdown">
+        <option>Carregando lojas...</option>
+      </select>
+    </div>
+
+    <!-- Links de Visualização da Filial -->
+    <div class="simulator-nav">
+      <a id="link-tv" href="#" target="_blank" class="btn btn-primary">
+        <i class="fa-solid fa-tv"></i> Abrir TV da Filial
+      </a>
+      <a id="link-atendente" href="#" target="_blank" class="btn btn-primary" style="background: linear-gradient(135deg, #818cf8 0%, #6366f1 100%);">
+        <i class="fa-solid fa-user-tie"></i> Painel do Atendente
+      </a>
+    </div>
+
+    <!-- Grid de Setores da Filial Selecionada -->
+    <div class="landing-grid" id="sectors-grid">
+      <!-- Injetado dinamicamente via JS -->
+    </div>
+  </main>
+
+  <footer style="text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.85rem;">
+    FilaPro © 2026 - Central Multi-Loja de Atendimento ao Cliente
+  </footer>
+
+  <script>
+    let currentConfig = null;
+    let selectedStoreSlug = 'machado-tarumas'; // Filial padrão inicial
+
+    // Carregar configuração do servidor
+    fetch('/api/config')
+      .then(res => res.json())
+      .then(config => {
+        currentConfig = config;
+        
+        // Verifica se há filial informada por parâmetro na URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlStore = urlParams.get('loja');
+        if (urlStore && config.stores[urlStore]) {
+          selectedStoreSlug = urlStore;
+        }
+        
+        // Preenche o dropdown de filiais
+        const select = document.getElementById('store-select');
+        select.innerHTML = '';
+        for (const slug in config.stores) {
+          const option = document.createElement('option');
+          option.value = slug;
+          option.textContent = config.stores[slug].name;
+          if (slug === selectedStoreSlug) option.selected = true;
+          select.appendChild(option);
+        }
+
+        // Renderiza os setores da primeira loja
+        renderStore(selectedStoreSlug);
+
+        // Atualiza a loja ao trocar a seleção
+        select.addEventListener('change', (e) => {
+          selectedStoreSlug = e.target.value;
+          renderStore(selectedStoreSlug);
+        });
+      })
+      .catch(err => {
+        console.error('Erro ao buscar IP de rede do servidor:', err);
+        document.getElementById('server-ip').textContent = window.location.host;
+      });
+
+    function renderStore(storeSlug) {
+      if (!currentConfig) return;
+      const store = currentConfig.stores[storeSlug];
+      const ipText = `${currentConfig.localIp}:${currentConfig.port}`;
+      document.getElementById('server-ip').textContent = ipText;
+
+      // Configura links principais de TV e Atendente para a loja selecionada
+      document.getElementById('link-tv').href = `/tv/${storeSlug}`;
+      document.getElementById('link-atendente').href = `/atendente/${storeSlug}`;
+
+      // Limpa e reconstrói o grid de setores
+      const grid = document.getElementById('sectors-grid');
+      grid.innerHTML = '';
+
+      const sectorIcons = {
+        acougue: 'fa-drumstick-bite',
+        padaria: 'fa-bread-slice',
+        rotisseria: 'fa-kitchen-set',
+        frios: 'fa-cheese',
+        peixaria: 'fa-fish'
+      };
+
+      const sectorGradients = {
+        acougue: 'var(--color-acougue-grad)',
+        padaria: 'var(--color-padaria-grad)',
+        rotisseria: 'var(--color-rotisseria-grad)',
+        frios: 'var(--color-frios-grad)',
+        peixaria: 'var(--color-peixaria-grad)'
+      };
+
+      for (const sectorKey in currentConfig.sectors) {
+        const sector = currentConfig.sectors[sectorKey];
+        const icon = sectorIcons[sectorKey] || 'fa-qrcode';
+        const grad = sectorGradients[sectorKey] || 'linear-gradient(135deg, #38bdf8 0%, #818cf8 100%)';
+        
+        const card = document.createElement('div');
+        card.className = `glass-card landing-card ${sectorKey}`;
+        card.innerHTML = `
+          <div>
+            <i class="fa-solid ${icon} sector-icon"></i>
+            <h2>Setor ${sector.name}</h2>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.5rem;">Fila prefixo <strong>${sector.prefix}</strong></p>
+          </div>
+          <div class="qr-placeholder">
+            <canvas id="qr-${sectorKey}"></canvas>
+          </div>
+          <a href="/cliente/${storeSlug}/${sectorKey}" target="_blank" class="btn btn-primary" style="background: ${grad};">
+            <i class="fa-solid fa-mobile-screen-button"></i> Simular Cliente
+          </a>
+        `;
+        grid.appendChild(card);
+
+        // URL para o smartphone do cliente acessar diretamente
+        const baseUrl = `http://${currentConfig.localIp}:${currentConfig.port}`;
+        const clientUrl = `${baseUrl}/cliente/${storeSlug}/${sectorKey}`;
+        setupQr(`qr-${sectorKey}`, clientUrl);
+      }
+    }
+
+    function setupQr(canvasId, value) {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return;
+      
+      if (typeof QRious !== 'undefined') {
+        try {
+          new QRious({
+            element: canvas,
+            value: value,
+            size: 140,
+            background: '#ffffff',
+            foreground: '#0f111a',
+            level: 'H'
+          });
+        } catch (e) {
+          console.error('Erro ao instanciar QRious:', e);
+          drawFallbackTextSmall(canvas, value);
+        }
+      } else {
+        drawFallbackTextSmall(canvas, value);
+      }
+    }
+
+    function drawFallbackTextSmall(canvas, value) {
+      const ctx = canvas.getContext('2d');
+      canvas.width = 140;
+      canvas.height = 140;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, 140, 140);
+      
+      ctx.strokeStyle = '#0f111a';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(2, 2, 136, 136);
+      
+      ctx.fillStyle = '#0f111a';
+      ctx.font = 'bold 10px Outfit, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('Acesse a URL:', 70, 40);
+      
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = 'bold 11px Outfit, sans-serif';
+      // Encurta a exibição retirando o protocolo e encurtando caminhos se possível
+      const displayUrl = value.replace('http://', '').replace('/cliente', '');
+      ctx.fillText(displayUrl, 70, 75);
+      
+      ctx.fillStyle = '#6b7280';
+      ctx.font = '9px Outfit, sans-serif';
+      ctx.fillText('Fila do Setor', 70, 110);
+    }
+  </script>
+</body>
+</html>

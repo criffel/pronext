@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FilaPro - Sua Senha</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* Estilos Adicionais Específicos do Cliente */
+    .client-card {
+      margin-top: 1rem;
+      max-width: 450px;
+    }
+    .called-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(2, 44, 34, 0.95);
+      z-index: 1000;
+      display: none; /* Controlado via JS */
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      text-align: center;
+      backdrop-filter: blur(10px);
+    }
+    .called-modal-content {
+      max-width: 400px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+    }
+    .bell-icon-pulse {
+      font-size: 5rem;
+      color: var(--color-success);
+      animation: pulseBell 1s infinite alternate;
+    }
+    @keyframes pulseBell {
+      0% { transform: scale(1) rotate(-5deg); }
+      100% { transform: scale(1.15) rotate(5deg); }
+    }
+    .alert-big-text {
+      font-size: 2.25rem;
+      font-weight: 800;
+      color: #fff;
+    }
+    .alert-guiche-box {
+      background: rgba(255, 255, 255, 0.1);
+      border: 2px solid var(--color-success);
+      border-radius: var(--border-radius-md);
+      padding: 1.5rem 3rem;
+      margin: 1rem 0;
+    }
+    .alert-guiche-number {
+      font-size: 4rem;
+      font-weight: 900;
+      color: #10b981;
+    }
+    .alert-instruction {
+      font-size: 1.1rem;
+      color: var(--text-secondary);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1><i class="fa-solid fa-layer-group"></i> FilaPro</h1>
+    <p>Atendimento Sem Fila Física</p>
+  </header>
+
+  <main>
+    <div class="glass-card client-card" id="main-card">
+      <div style="margin-bottom: 1rem;">
+        <span class="client-ticket-label" id="sector-name">Carregando...</span>
+      </div>
+      
+      <div class="client-ticket-container">
+        <div class="client-ticket-number" id="ticket-number">---</div>
+        <p style="color: var(--text-secondary); font-size: 0.95rem;">Sua Senha de Atendimento</p>
+      </div>
+
+      <div class="status-counter-grid">
+        <div class="status-item" style="border-right: 1px solid var(--border-glass);">
+          <div class="status-value" id="waiting-ahead">...</div>
+          <div class="status-label">À sua frente</div>
+        </div>
+        <div class="status-item">
+          <div class="status-value" id="current-called">---</div>
+          <div class="status-label" id="current-guiche">Chamada Atual</div>
+        </div>
+      </div>
+
+      <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border-glass); text-align: center;">
+        <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.5;">
+          <i class="fa-solid fa-circle-check" style="color: var(--color-success); margin-right: 0.25rem;"></i>
+          Você pode continuar suas compras! O celular vibrará e emitirá um som quando sua vez chegar.
+        </p>
+      </div>
+    </div>
+  </main>
+
+  <!-- Overlay de Chamada Realizada (Sua Vez!) -->
+  <div class="called-modal-overlay" id="called-modal">
+    <div class="called-modal-content">
+      <i class="fa-solid fa-bell bell-icon-pulse"></i>
+      <div class="alert-big-text">SUA VEZ!</div>
+      
+      <div class="alert-instruction">
+        Dirija-se imediatamente ao balcão de atendimento:
+      </div>
+
+      <div class="alert-guiche-box">
+        <div style="font-size: 0.875rem; text-transform: uppercase; color: var(--text-secondary);">Guichê / Balcão</div>
+        <div class="alert-guiche-number" id="alert-guiche">02</div>
+      </div>
+
+      <button class="btn btn-primary" id="btn-dismiss" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); font-size: 1.2rem; padding: 1.25rem;">
+        <i class="fa-solid fa-check"></i> Entendido, Fui Atendido
+      </button>
+    </div>
+  </div>
+
+  <footer style="text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.85rem;">
+    FilaPro © 2026 - Central de Filas Supermercado
+  </footer>
+
+  <!-- Carrega socket.io cliente servido automaticamente pelo backend -->
+  <script src="/socket.io/socket.io.js"></script>
+  <!-- Carrega scripts de controle -->
+  <script src="/js/client.js"></script>
+</body>
+</html>

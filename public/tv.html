@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FilaPro - Painel Eletrônico</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+</head>
+<body class="tv-layout">
+
+  <!-- Painel Principal (Propagandas ou Chamada Ativa) -->
+  <div class="tv-main-call" id="tv-main-card">
+    
+    <!-- Carrossel de Ofertas / Marketing -->
+    <div class="tv-marketing-slider" id="tv-marketing-slider">
+      <!-- Slide Geral -->
+      <div class="marketing-slide general active">
+        <div class="slide-content-split">
+          <div class="slide-qr-box">
+            <canvas id="qr-tv-general"></canvas>
+          </div>
+          <div class="slide-info-col">
+            <div class="promo-title" id="tv-title-store">Supermercado ProNext</div>
+            <div class="promo-product">Evite Filas em Pé!</div>
+            <p style="font-size: 1.6rem; color: var(--text-secondary); line-height: 1.6;">
+              <i class="fa-solid fa-qrcode" style="color: #38bdf8; margin-right: 0.5rem;"></i>
+              Escaneie o QR Code ao lado para retirar sua senha de qualquer setor no seu celular e continue suas compras com total comodidade.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide Açougue -->
+      <div class="marketing-slide acougue">
+        <div class="slide-content-split">
+          <div class="slide-image-col">
+            <img src="/images/picanha.png" alt="Picanha Premium">
+          </div>
+          <div class="slide-info-col">
+            <div class="promo-title">Oferta Especial - Açougue</div>
+            <div class="promo-product">Picanha Bovina Premium</div>
+            <div class="promo-price-box">
+              <span class="promo-rs">R$</span>
+              <span class="promo-price">59,90</span>
+              <span class="promo-unit">/ kg</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide Padaria -->
+      <div class="marketing-slide padaria">
+        <div class="slide-content-split">
+          <div class="slide-image-col">
+            <img src="/images/paodequeijo.png" alt="Pão de Queijo">
+          </div>
+          <div class="slide-info-col">
+            <div class="promo-title">Saindo do Forno - Padaria</div>
+            <div class="promo-product">Pão de Queijo Tradicional</div>
+            <div class="promo-price-box">
+              <span class="promo-rs">R$</span>
+              <span class="promo-price">24,90</span>
+              <span class="promo-unit">/ kg</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide Rotisseria -->
+      <div class="marketing-slide rotisseria">
+        <div class="slide-content-split">
+          <div class="slide-image-col">
+            <img src="/images/rotisseria.png" alt="Frango Assado">
+          </div>
+          <div class="slide-info-col">
+            <div class="promo-title">Prato do Dia - Rotisseria</div>
+            <div class="promo-product">Frango Assado com Batatas</div>
+            <div class="promo-price-box">
+              <span class="promo-rs">R$</span>
+              <span class="promo-price">34,90</span>
+              <span class="promo-unit">/ un</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide Frios -->
+      <div class="marketing-slide frios">
+        <div class="slide-content-split">
+          <div class="slide-image-col">
+            <img src="/images/frios.png" alt="Tábua de Frios">
+          </div>
+          <div class="slide-info-col">
+            <div class="promo-title">Oferta do Fim de Semana - Frios</div>
+            <div class="promo-product">Tábua de Frios Premium</div>
+            <div class="promo-price-box">
+              <span class="promo-rs">R$</span>
+              <span class="promo-price">18,90</span>
+              <span class="promo-unit">/ 100g</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide Peixaria -->
+      <div class="marketing-slide peixaria">
+        <div class="slide-content-split">
+          <div class="slide-image-col">
+            <img src="/images/salmao.png" alt="Salmão Chileno">
+          </div>
+          <div class="slide-info-col">
+            <div class="promo-title">Fresco da Semana - Peixaria</div>
+            <div class="promo-product">Filé de Salmão Chileno</div>
+            <div class="promo-price-box">
+              <span class="promo-rs">R$</span>
+              <span class="promo-price">69,90</span>
+              <span class="promo-unit">/ kg</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Overlay de Chamada de Senha Ativa (Card centralizado) -->
+    <div class="tv-active-call-overlay" id="tv-call-overlay">
+      <div class="tv-call-card">
+        <div class="tv-call-header">
+          <i class="fa-solid fa-bullhorn"></i>
+          <span>Senha Chamada</span>
+        </div>
+        
+        <div class="tv-ticket-display" id="tv-main-ticket">---</div>
+        
+        <div class="tv-details-display">
+          <span id="tv-main-sector">Aguardando Chamada</span>
+          <span class="tv-badge" id="tv-main-guiche">Guichê --</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Painel Inferior de Histórico -->
+  <div class="tv-history-panel" id="tv-history-list">
+    <!-- Renderizado dinamicamente via JS -->
+    <div class="history-card" style="opacity: 0.3;">
+      <div class="history-ticket">---</div>
+      <div class="history-label">Aguardando...</div>
+    </div>
+    <div class="history-card" style="opacity: 0.3;">
+      <div class="history-ticket">---</div>
+      <div class="history-label">Aguardando...</div>
+    </div>
+    <div class="history-card" style="opacity: 0.3;">
+      <div class="history-ticket">---</div>
+      <div class="history-label">Aguardando...</div>
+    </div>
+  </div>
+
+  <!-- Controle Flutuante de Voz/Som -->
+  <div class="tv-voice-control" id="voice-control" title="Clique para ativar/desativar avisos por voz">
+    <div class="tv-voice-dot muted" id="voice-dot"></div>
+    <span id="voice-status-text" style="color: var(--text-secondary); font-weight: 600;">Clique para Ativar Som</span>
+    <i class="fa-solid fa-volume-high" style="color: var(--text-secondary);"></i>
+  </div>
+
+  <!-- Carrega socket.io cliente servido automaticamente pelo backend -->
+  <script src="/socket.io/socket.io.js"></script>
+  <!-- Carrega script da TV -->
+  <script src="/js/tv.js"></script>
+</body>
+</html>

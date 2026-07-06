@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FilaPro - Painel do Atendente</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* Estilos Específicos para o Painel do Atendente */
+    .att-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border-glass);
+    }
+    .att-header h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+    .att-header .badge {
+      background: #38bdf8;
+      color: #0f111a;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+    .attendant-dashboard {
+      display: none; /* Exibido via JS após login */
+      width: 100%;
+      max-width: 900px;
+    }
+    .attendant-dashboard.acougue .att-header .badge { background: var(--color-acougue); color: #fff; }
+    .attendant-dashboard.padaria .att-header .badge { background: var(--color-padaria); color: #fff; }
+    .attendant-dashboard.rotisseria .att-header .badge { background: var(--color-rotisseria); color: #fff; }
+    .attendant-dashboard.frios .att-header .badge { background: var(--color-frios); color: #fff; }
+    .attendant-dashboard.peixaria .att-header .badge { background: var(--color-peixaria); color: #fff; }
+    
+    .last-called-card {
+      background: rgba(0,0,0,0.2);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--border-radius-md);
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .last-called-label {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+    .last-called-val {
+      font-size: 1.75rem;
+      font-weight: 800;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1><i class="fa-solid fa-layer-group"></i> FilaPro</h1>
+    <p>Painel de Atendimento por Setor</p>
+  </header>
+
+  <main>
+    <!-- Tela Inicial: Seleção de Setor e Guichê -->
+    <div class="glass-card" id="panel-setup">
+      <h2 style="margin-bottom: 1.5rem;"><i class="fa-solid fa-store" style="color: #38bdf8; margin-right: 0.5rem;"></i>Iniciar Atendimento</h2>
+      <form id="form-setup">
+        <div class="form-group">
+          <label for="select-sector">Setor de Atendimento</label>
+          <select id="select-sector" required>
+            <option value="" disabled selected>Carregando setores...</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="input-guiche">Número do Guichê / Balcão</label>
+          <input type="number" id="input-guiche" min="1" max="99" placeholder="Ex: 2" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">
+          <i class="fa-solid fa-play"></i> Iniciar Painel
+        </button>
+      </form>
+    </div>
+
+    <!-- Tela do Dashboard do Atendente (Carregado Dinamicamente) -->
+    <div class="attendant-grid attendant-dashboard" id="panel-dashboard">
+      <!-- Painel Principal de Ações -->
+      <div class="attendant-panel-main">
+        <div class="glass-card" style="max-width: 100%; text-align: left; padding: 2rem;">
+          <div class="att-header">
+            <h2 id="display-sector">Açougue</h2>
+            <span class="badge" id="display-guiche">Guichê --</span>
+          </div>
+
+          <div class="last-called-card">
+            <span class="last-called-label">Última senha chamada por você</span>
+            <span class="last-called-val" id="display-last-called">---</span>
+          </div>
+
+          <button class="btn btn-success attendant-action-btn" id="btn-call-next">
+            <i class="fa-solid fa-bullhorn" style="font-size: 1.4rem;"></i> Chamar Próximo Cliente
+          </button>
+
+          <button class="btn btn-warning" id="btn-recall" style="padding: 1rem; font-size: 1rem;">
+            <i class="fa-solid fa-rotate"></i> Chamar Novamente (Recall)
+          </button>
+        </div>
+
+        <!-- Chamada de Senha Direta/Específica -->
+        <div class="glass-card" style="max-width: 100%; text-align: left; padding: 1.5rem;">
+          <h3 style="font-size: 1rem; margin-bottom: 0.75rem; color: var(--text-secondary);"><i class="fa-solid fa-keyboard" style="margin-right: 0.25rem;"></i>Chamada Direta</h3>
+          <form id="form-specific" style="display: flex; gap: 0.5rem;">
+            <input type="number" id="input-specific" min="1" placeholder="Número da senha..." required style="padding: 0.75rem;">
+            <button type="submit" class="btn btn-primary" style="width: auto; padding: 0.75rem 1.5rem; font-size: 0.95rem;">
+              Chamar
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Barra Lateral: Clientes Aguardando -->
+      <div class="attendant-sidebar">
+        <div class="sidebar-title">
+          <i class="fa-solid fa-users" style="margin-right: 0.5rem;"></i> Fila de Espera
+        </div>
+
+        <div style="background: rgba(0, 0, 0, 0.2); border-radius: var(--border-radius-md); padding: 1rem; margin-bottom: 1.25rem; text-align: center; border: 1px solid var(--border-glass);">
+          <div style="font-size: 2.25rem; font-weight: 800; color: #38bdf8;" id="display-waiting-count">0</div>
+          <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-secondary); margin-top: 0.25rem;">Clientes Aguardando</div>
+        </div>
+
+        <div class="sidebar-title" style="font-size: 0.85rem; border: none; margin-bottom: 0.5rem; padding: 0;">Próximas Senhas</div>
+        <div class="waiting-list-container" id="waiting-list">
+          <!-- Renderizado via JS -->
+          <div style="color: var(--text-muted); text-align: center; padding: 1rem;">Nenhum cliente na fila.</div>
+        </div>
+
+        <button class="btn" id="btn-reset" style="background: transparent; color: var(--text-muted); font-size: 0.85rem; margin-top: auto; border: 1px dashed var(--border-glass); padding: 0.75rem;">
+          <i class="fa-solid fa-trash-can"></i> Zerar Fila do Setor
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <footer style="text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.85rem;">
+    FilaPro © 2026 - Central de Atendimento Supermercado
+  </footer>
+
+  <!-- Carrega socket.io cliente servido automaticamente pelo backend -->
+  <script src="/socket.io/socket.io.js"></script>
+  <!-- Carrega scripts do atendente -->
+  <script src="/js/attendant.js"></script>
+</body>
+</html>
