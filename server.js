@@ -69,6 +69,17 @@ app.get('/cliente/:loja/:setor', (req, res) => {
   }
 });
 
+// Rota dinâmica para Autoatendimento do Cliente de uma filial específica
+app.get('/retirar/:loja', (req, res) => {
+  const { loja } = req.params;
+  const storeSlug = loja.toLowerCase();
+  if (STORES[storeSlug]) {
+    res.sendFile(path.join(__dirname, 'public', 'retirar.html'));
+  } else {
+    res.status(404).send('Filial inválida na URL de autoatendimento.');
+  }
+});
+
 // Rota dinâmica para TV de uma filial específica
 app.get('/tv/:loja', (req, res) => {
   const { loja } = req.params;

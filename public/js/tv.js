@@ -141,12 +141,24 @@ fetch('/api/config')
       if (elSlideTitle)  elSlideTitle.innerHTML = storeObj.name.replace(' ', '<br>');
     }
 
-    // QR Code: usa o domínio/IP atual de onde a TV está rodando (funciona em produção 3G/4G/5G ou local)
-    const qrUrl = `${window.location.origin}/?loja=${storeSlug}`;
-    generateQrOnCanvas('qr-tv-general', qrUrl);
+    // QR Code Geral: leva para a página de autoatendimento para escolher setor
+    const generalQrUrl = `${window.location.origin}/retirar/${storeSlug}`;
+    generateQrOnCanvas('qr-tv-general', generalQrUrl);
+
+    // QR Codes por setor (Senha Rápida): direciona direto para o cliente gerar a senha no setor
+    generateQrOnCanvas('qr-tv-acougue', `${window.location.origin}/cliente/${storeSlug}/acougue`);
+    generateQrOnCanvas('qr-tv-padaria', `${window.location.origin}/cliente/${storeSlug}/padaria`);
+    generateQrOnCanvas('qr-tv-rotisseria', `${window.location.origin}/cliente/${storeSlug}/rotisseria`);
+    generateQrOnCanvas('qr-tv-frios', `${window.location.origin}/cliente/${storeSlug}/frios`);
+    generateQrOnCanvas('qr-tv-peixaria', `${window.location.origin}/cliente/${storeSlug}/peixaria`);
   })
   .catch(() => {
-    generateQrOnCanvas('qr-tv-general', `${window.location.origin}/?loja=${storeSlug}`);
+    generateQrOnCanvas('qr-tv-general', `${window.location.origin}/retirar/${storeSlug}`);
+    generateQrOnCanvas('qr-tv-acougue', `${window.location.origin}/cliente/${storeSlug}/acougue`);
+    generateQrOnCanvas('qr-tv-padaria', `${window.location.origin}/cliente/${storeSlug}/padaria`);
+    generateQrOnCanvas('qr-tv-rotisseria', `${window.location.origin}/cliente/${storeSlug}/rotisseria`);
+    generateQrOnCanvas('qr-tv-frios', `${window.location.origin}/cliente/${storeSlug}/frios`);
+    generateQrOnCanvas('qr-tv-peixaria', `${window.location.origin}/cliente/${storeSlug}/peixaria`);
   });
 
 // ─── Socket.io ───────────────────────────────────────────

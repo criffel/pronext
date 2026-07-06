@@ -155,6 +155,9 @@
       <a id="link-atendente" href="#" target="_blank" class="btn btn-primary" style="background: linear-gradient(135deg, #818cf8 0%, #6366f1 100%);">
         <i class="fa-solid fa-user-tie"></i> Painel do Atendente
       </a>
+      <a id="link-retirar" href="#" target="_blank" class="btn btn-primary" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+        <i class="fa-solid fa-mobile-screen-button"></i> Autoatendimento do Cliente (Celular)
+      </a>
     </div>
 
     <!-- Grid de Setores da Filial Selecionada -->
@@ -234,9 +237,10 @@
       if (!currentConfig) return;
       const store = currentConfig.stores[storeSlug];
 
-      // Configura links principais de TV e Atendente para a loja selecionada
+      // Configura links principais de TV, Atendente e Autoatendimento para a loja selecionada
       document.getElementById('link-tv').href = `/tv/${storeSlug}`;
       document.getElementById('link-atendente').href = `/atendente/${storeSlug}`;
+      document.getElementById('link-retirar').href = `/retirar/${storeSlug}`;
 
       // Limpa e reconstrói o grid de setores
       const grid = document.getElementById('sectors-grid');
