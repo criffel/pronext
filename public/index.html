@@ -131,9 +131,9 @@
   </header>
 
   <main>
-    <div class="wifi-alert">
-      <i class="fa-solid fa-wifi"></i>
-      <span>Para testar no celular, conecte no mesmo Wi-Fi. IP local: <strong id="server-ip">Carregando...</strong></span>
+    <div class="wifi-alert" id="connection-banner">
+      <i class="fa-solid fa-wifi" id="connection-icon"></i>
+      <span id="connection-text">Verificando status de conexão com o servidor...</span>
     </div>
 
     <!-- Seletor Corporativo de Filial -->
@@ -195,6 +195,24 @@
           select.appendChild(option);
         }
 
+        // Configura banner de conexão dinâmico (local vs. produção)
+        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.startsWith('192.168.') || window.location.hostname.startsWith('10.');
+        const serverHost = window.location.host;
+        const connBanner = document.getElementById('connection-banner');
+        const connIcon = document.getElementById('connection-icon');
+        const connText = document.getElementById('connection-text');
+        
+        if (isLocal) {
+          connIcon.className = "fa-solid fa-wifi";
+          connText.innerHTML = `Ambiente Local: Para testar no celular, conecte no mesmo Wi-Fi. Endereço: <strong>${serverHost}</strong> ou IP local: <strong>${config.localIp}:${config.port}</strong>`;
+        } else {
+          connBanner.style.background = "rgba(34, 197, 94, 0.1)";
+          connBanner.style.borderColor = "rgba(34, 197, 94, 0.3)";
+          connIcon.className = "fa-solid fa-globe";
+          connIcon.style.color = "#22c55e";
+          connText.innerHTML = `Servidor de Produção Ativo: Acesse de qualquer lugar (incluindo 3G/4G/5G) no endereço: <strong style="color: #38bdf8;">${serverHost}</strong>`;
+        }
+
         // Renderiza os setores da primeira loja
         renderStore(selectedStoreSlug);
 
@@ -205,15 +223,16 @@
         });
       })
       .catch(err => {
-        console.error('Erro ao buscar IP de rede do servidor:', err);
-        document.getElementById('server-ip').textContent = window.location.host;
+        console.error('Erro ao buscar configuração do servidor:', err);
+        const connText = document.getElementById('connection-text');
+        if (connText) {
+          connText.innerHTML = `Erro de conexão: Servidor offline ou inacessível no endereço <strong>${window.location.host}</strong>`;
+        }
       });
 
     function renderStore(storeSlug) {
       if (!currentConfig) return;
       const store = currentConfig.stores[storeSlug];
-      const ipText = `${currentConfig.localIp}:${currentConfig.port}`;
-      document.getElementById('server-ip').textContent = ipText;
 
       // Configura links principais de TV e Atendente para a loja selecionada
       document.getElementById('link-tv').href = `/tv/${storeSlug}`;

@@ -141,8 +141,8 @@ fetch('/api/config')
       if (elSlideTitle)  elSlideTitle.innerHTML = storeObj.name.replace(' ', '<br>');
     }
 
-    // QR Code: usa IP local para rede interna (celular do cliente na loja)
-    const qrUrl = `http://${config.localIp}:${config.port}/?loja=${storeSlug}`;
+    // QR Code: usa o domínio/IP atual de onde a TV está rodando (funciona em produção 3G/4G/5G ou local)
+    const qrUrl = `${window.location.origin}/?loja=${storeSlug}`;
     generateQrOnCanvas('qr-tv-general', qrUrl);
   })
   .catch(() => {
