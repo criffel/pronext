@@ -6,8 +6,6 @@ const elMainTicket    = document.getElementById('tv-main-ticket');
 const elMainSector    = document.getElementById('tv-main-sector');
 const elHistoryPanel  = document.getElementById('tv-history-panel');
 const elVoiceControl  = document.getElementById('voice-control');
-const elVoiceStatusText = document.getElementById('voice-status-text');
-const elVoiceDot      = document.getElementById('voice-dot');
 const elVoiceIcon     = document.getElementById('voice-icon');
 const elProgressBar   = document.getElementById('slide-progress-bar');
 const elSliderArea    = document.getElementById('tv-slider-area');
@@ -288,21 +286,20 @@ function speakTicket(ticket) {
 }
 
 // ─── Controle de Voz ─────────────────────────────────────
-elVoiceControl.addEventListener('click', () => {
+elVoiceControl.addEventListener('click', (e) => {
+  e.stopPropagation(); // Evita re-disparar o clique da janela
   soundEnabled = !soundEnabled;
 
   if (soundEnabled) {
-    elVoiceDot.className = 'on';
-    elVoiceDot.id = 'voice-dot';
-    elVoiceStatusText.textContent = 'Som Ativado';
     elVoiceIcon.className = 'fa-solid fa-volume-high';
-    elVoiceControl.style.borderColor = 'rgba(34,197,94,0.4)';
+    elVoiceIcon.style.color = '#22c55e';
+    elVoiceIcon.style.filter = 'drop-shadow(0 0 8px rgba(34, 197, 94, 0.4))';
+    elVoiceControl.style.borderColor = 'rgba(34, 197, 94, 0.4)';
     playChime();
   } else {
-    elVoiceDot.className = 'off';
-    elVoiceDot.id = 'voice-dot';
-    elVoiceStatusText.textContent = 'Som Desativado';
     elVoiceIcon.className = 'fa-solid fa-volume-xmark';
+    elVoiceIcon.style.color = '#ef4444';
+    elVoiceIcon.style.filter = 'drop-shadow(0 0 8px rgba(239, 68, 68, 0.4))';
     elVoiceControl.style.borderColor = 'var(--border)';
     window.speechSynthesis.cancel();
   }
