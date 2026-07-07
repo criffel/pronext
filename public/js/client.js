@@ -21,6 +21,8 @@ sector = sector.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 // Variáveis de Estado
 let myTicket = null;
 let wakeLock = null;
+let pushSubscription = null;
+let vibrationInterval = null;
 
 // Aplica classe de cor do setor no body
 document.body.classList.add(sector);
@@ -40,15 +42,75 @@ if (cachedTicket) {
 // Ao conectar, registra o cliente no servidor
 socket.on('connect', () => {
   console.log('Conectado ao servidor.');
-  socket.emit('register_client', {
-    loja: storeSlug,
-    sector: sector,
-    existingTicket: existingTicket
-  });
+  sendRegistration();
   
   // Ativa Wake Lock para manter a tela ligada se suportado
   requestWakeLock();
 });
+
+// Envia o registro inicial do cliente com a assinatura Push opcional
+function sendRegistration() {
+  socket.emit('register_client', {
+    loja: storeSlug,
+    sector: sector,
+    existingTicket: existingTicket,
+    subscription: pushSubscription
+  });
+}
+
+// Helper para converter a chave pública VAPID do formato base64 para Uint8Array
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding)
+    .replace(/\-/g, '+')
+    .replace(/_/g, '/');
+
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
+// Registra Service Worker e inscreve no Web Push se suportado
+if ('serviceWorker' in navigator && 'PushManager' in window) {
+  navigator.serviceWorker.register('/sw.js')
+    .then(reg => {
+      console.log('Service Worker registrado:', reg);
+      
+      // Solicita permissão para notificações
+      return Notification.requestPermission().then(permission => {
+        if (permission === 'granted') {
+          // Busca configuração VAPID do servidor
+          return fetch('/api/config')
+            .then(res => res.json())
+            .then(config => {
+              if (config.publicVapidKey) {
+                const options = {
+                  userVisibleOnly: true,
+                  applicationServerKey: urlBase64ToUint8Array(config.publicVapidKey)
+                };
+                return reg.pushManager.subscribe(options);
+              }
+            });
+        }
+      });
+    })
+    .then(sub => {
+      if (sub) {
+        console.log('Assinatura Push criada com sucesso.');
+        pushSubscription = sub;
+        if (socket.connected) {
+          sendRegistration();
+        }
+      }
+    })
+    .catch(err => {
+      console.warn('Configuração de Push Notifications não suportada ou recusada:', err);
+    });
+}
 
 // Recebe a senha gerada ou recuperada
 socket.on('ticket_assigned', ({ ticket, position }) => {
@@ -87,7 +149,6 @@ socket.on('your_turn', ({ ticket, isRecall }) => {
   playChime();
   vibrateDevice();
   
-  // Se for recall, pisca a tela de forma mais agressiva
   if (isRecall) {
     console.log('Chamada repetida!');
   }
@@ -95,9 +156,10 @@ socket.on('your_turn', ({ ticket, isRecall }) => {
 
 // Ação de Dispensar Alerta
 elBtnDismiss.addEventListener('click', () => {
-  // Limpa alerta visual
+  // Limpa alerta visual e para vibração
   document.body.classList.remove('called-alert');
   elAlertContainer.style.display = 'none';
+  stopVibration();
   
   // Remove do localStorage para poder gerar uma nova senha ao recarregar a página
   localStorage.removeItem(localStorageKey);
@@ -155,11 +217,30 @@ function playChime() {
   }
 }
 
-// API de Vibração do HTML5
+// API de Vibração do HTML5 (Melhorada para rodar em loop até o atendido clicar)
 function vibrateDevice() {
   if (navigator.vibrate) {
-    // Padrão de vibração: Vibra 400ms, pausa 200ms, vibra 400ms, pausa 200ms, vibra 800ms
-    navigator.vibrate([400, 200, 400, 200, 800]);
+    navigator.vibrate(0); // Para vibrações anteriores
+    if (vibrationInterval) clearInterval(vibrationInterval);
+    
+    // Padrão forte: vibra 500ms, pausa 250ms, vibra 500ms, pausa 250ms, vibra 800ms
+    const pattern = [500, 250, 500, 250, 800, 250, 800];
+    navigator.vibrate(pattern);
+    
+    // Repete a vibração a cada 5 segundos enquanto o modal estiver aberto
+    vibrationInterval = setInterval(() => {
+      navigator.vibrate(pattern);
+    }, 5000);
+  }
+}
+
+function stopVibration() {
+  if (navigator.vibrate) {
+    navigator.vibrate(0);
+  }
+  if (vibrationInterval) {
+    clearInterval(vibrationInterval);
+    vibrationInterval = null;
   }
 }
 

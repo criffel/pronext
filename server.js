@@ -3,12 +3,20 @@ const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 const os = require('os');
+const webpush = require('web-push');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
 const PORT = process.env.PORT || 3000;
+
+// Configuração do Web Push (VAPID) para notificações em background/tela bloqueada
+webpush.setVapidDetails(
+  'mailto:cristiano.timachado@gmail.com',
+  'BODBKn45anyO-H_lFXzj3XbXAKd7EeAm95cwqbszUCki5HXuFoyvpAla6cJvZHKYglAvlMsGgGCMT-egm4_9GS8',
+  'I8hkvQychaAdJRnnn7UjN1cQ1AXz7Bq-OjkEUgqtmns'
+);
 
 // Lista real de lojas do grupo
 const STORES = {
@@ -134,7 +142,8 @@ app.get('/api/config', (req, res) => {
     localIp: getLocalIp(),
     port: PORT,
     stores: STORES,
-    sectors: SECTORS
+    sectors: SECTORS,
+    publicVapidKey: 'BODBKn45anyO-H_lFXzj3XbXAKd7EeAm95cwqbszUCki5HXuFoyvpAla6cJvZHKYglAvlMsGgGCMT-egm4_9GS8'
   });
 });
 
@@ -169,7 +178,7 @@ io.on('connection', (socket) => {
 
   // Registro/Reconexão do Cliente
   socket.on('register_client', (data) => {
-    const { loja, sector, existingTicket } = data || {};
+    const { loja, sector, existingTicket, subscription } = data || {};
     const storeSlug = loja ? loja.toLowerCase() : '';
     if (!STORES[storeSlug] || !SECTORS[sector]) {
       return socket.emit('error_message', 'Loja ou Setor inválido no registro do cliente.');
@@ -185,12 +194,14 @@ io.on('connection', (socket) => {
       if (foundInWaiting) {
         ticket = foundInWaiting;
         ticket.socketId = socket.id;
+        if (subscription) ticket.subscription = subscription;
       } else {
         // Tenta recuperar nos chamados recentes
         const foundInCalled = queues[storeSlug][sector].called.find(t => t.number === existingTicket.number);
         if (foundInCalled) {
           ticket = foundInCalled;
           ticket.socketId = socket.id;
+          if (subscription) ticket.subscription = subscription;
         }
       }
     }
@@ -209,7 +220,8 @@ io.on('connection', (socket) => {
         sectorName: SECTORS[sector].name,
         socketId: socket.id,
         createdAt: Date.now(),
-        status: 'waiting'
+        status: 'waiting',
+        subscription: subscription || null
       };
 
       queues[storeSlug][sector].waiting.push(ticket);
@@ -411,7 +423,26 @@ function triggerCall(loja, ticket, isRecall = false) {
     isRecall
   });
 
-  // 3. Atualiza filas
+  // 3. Envia Notificação Push em background se o cliente tiver assinatura ativa
+  if (ticket.subscription) {
+    const payload = JSON.stringify({
+      title: `FilaPro - Sua Vez!`,
+      body: `Senha ${ticket.formatted} chamada no setor ${ticket.sectorName}!`,
+      url: `/cliente/${ticket.loja}/${ticket.sector}`
+    });
+
+    webpush.sendNotification(ticket.subscription, payload)
+      .then(() => console.log(`Push enviado com sucesso para a senha ${ticket.formatted}`))
+      .catch(err => {
+        console.error(`Erro ao enviar Push para ${ticket.formatted}:`, err);
+        // Limpa assinatura inválida ou expirada
+        if (err.statusCode === 410 || err.statusCode === 404) {
+          ticket.subscription = null;
+        }
+      });
+  }
+
+  // 4. Atualiza filas
   broadcastQueueUpdates(loja, ticket.sector);
 }
 
