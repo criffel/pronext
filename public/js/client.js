@@ -161,10 +161,20 @@ elBtnDismiss.addEventListener('click', () => {
   elAlertContainer.style.display = 'none';
   stopVibration();
   
-  // Remove do localStorage para poder gerar uma nova senha ao recarregar a página
+  // Remove o ticket do localStorage para não re-carregar como ativo
   localStorage.removeItem(localStorageKey);
+  myTicket = null;
+
+  // Configura os links do card de finalizado
+  document.getElementById('link-back-selection').href = `/retirar/${storeSlug}`;
   
-  // Recarrega a página para pegar uma nova senha se o cliente quiser reentrar na fila
+  // Oculta painel ativo e exibe painel de finalização
+  document.getElementById('main-card').style.display = 'none';
+  document.getElementById('finished-card').style.display = 'block';
+});
+
+// Ação de Solicitar Nova Senha no mesmo setor
+document.getElementById('btn-new-ticket').addEventListener('click', () => {
   window.location.reload();
 });
 
