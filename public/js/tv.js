@@ -13,7 +13,7 @@ const elProgressBar   = document.getElementById('slide-progress-bar');
 const elSliderArea    = document.getElementById('tv-slider-area');
 
 // ─── Estado ─────────────────────────────────────────────
-let soundEnabled = false;
+let soundEnabled = true;
 let callTimeout  = null;
 let currentSlideIndex = 0;
 let slideInterval = null;
@@ -307,3 +307,23 @@ elVoiceControl.addEventListener('click', () => {
     window.speechSynthesis.cancel();
   }
 });
+
+// Desbloqueia o AudioContext/Autoplay na primeira interação com qualquer parte da tela
+function unlockAudio() {
+  try {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (AudioContextClass) {
+      const tempCtx = new AudioContextClass();
+      if (tempCtx.state === 'suspended') {
+        tempCtx.resume();
+      }
+    }
+  } catch (e) {
+    console.error('Erro ao desbloquear áudio:', e);
+  }
+  // Remove os ouvintes para não rodar novamente
+  window.removeEventListener('click', unlockAudio);
+  window.removeEventListener('touchstart', unlockAudio);
+}
+window.addEventListener('click', unlockAudio);
+window.addEventListener('touchstart', unlockAudio);
