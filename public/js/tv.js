@@ -268,17 +268,47 @@ function playChime() {
   }
 }
 
+// Pré-carrega vozes para evitar falhas assíncronas no TTS
+let ptVoice = null;
+function loadVoices() {
+  if (typeof window !== 'undefined' && window.speechSynthesis) {
+    const voices = window.speechSynthesis.getVoices();
+    ptVoice = voices.find(v => v.lang.includes('pt-BR') || v.lang.includes('pt_BR'));
+  }
+}
+if (typeof window !== 'undefined' && window.speechSynthesis) {
+  window.speechSynthesis.onvoiceschanged = loadVoices;
+  loadVoices();
+}
+
 function speakTicket(ticket) {
   try {
     const letters = ticket.formatted.match(/[A-Za-z]+/)[0];
     const numbers = ticket.formatted.match(/\d+/)[0];
-    const spelled = `${letters.split('').join(' ')}, ${numbers.split('').join(' ')}`;
-    const text = `Senha ${spelled}, ${ticket.sectorName}.`;
+    
+    // Mapeamento explícito para forçar a pronúncia correta de cada número em português
+    const digitNames = {
+      '0': 'zero', '1': 'um', '2': 'dois', '3': 'três', '4': 'quatro',
+      '5': 'cinco', '6': 'seis', '7': 'sete', '8': 'oito', '9': 'nove'
+    };
+    
+    const spelledNumbers = numbers.split('').map(d => digitNames[d] || d).join(' ');
+    const spelledLetters = letters.split('').join(' ');
+    const text = `Senha ${spelledLetters}, ${spelledNumbers}, ${ticket.sectorName}.`;
 
     window.speechSynthesis.cancel();
     const utt = new SpeechSynthesisUtterance(text);
     utt.lang = 'pt-BR';
     utt.rate = 0.85;
+    
+    if (ptVoice) {
+      utt.voice = ptVoice;
+    } else {
+      const voices = window.speechSynthesis.getVoices();
+      const voice = voices.find(v => v.lang.includes('pt-BR') || v.lang.includes('pt_BR'));
+      if (voice) utt.voice = voice;
+    }
+
     window.speechSynthesis.speak(utt);
   } catch (err) {
     console.error('TTS error:', err);
@@ -315,6 +345,12 @@ function unlockAudio() {
         tempCtx.resume();
       }
     }
+    // Força desbloqueio do sintetizador de voz (Safari/Chrome require synchronous user-gesture)
+    window.speechSynthesis.cancel();
+    const silentUtt = new SpeechSynthesisUtterance(' ');
+    silentUtt.volume = 0;
+    window.speechSynthesis.speak(silentUtt);
+    console.log('Sintetizador e áudio desbloqueados.');
   } catch (e) {
     console.error('Erro ao desbloquear áudio:', e);
   }
