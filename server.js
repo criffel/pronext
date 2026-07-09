@@ -3,7 +3,9 @@ const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 const os = require('os');
+const fs = require('fs');
 const webpush = require('web-push');
+const { initToledoListener } = require('./toledo-listener');
 
 const app = express();
 const server = http.createServer(app);
@@ -56,12 +58,147 @@ for (const storeSlug in STORES) {
   }
 }
 
+app.use(express.json());
+
 // Serve arquivos estáticos da pasta public
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Rota de Landing Page (Seletor central de filiais)
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Rota para a interface de configuração de balanças
+app.get('/config/balancas', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'config.html'));
+});
+
+// API para ler as configurações de balanças Toledo
+app.get('/api/toledo/config', (req, res) => {
+  const configPath = path.join(__dirname, 'toledo-config.json');
+  try {
+    if (fs.existsSync(configPath)) {
+      const raw = fs.readFileSync(configPath, 'utf8');
+      return res.json(JSON.parse(raw));
+    }
+  } catch (err) {
+    console.error('Erro ao ler toledo-config.json:', err);
+  }
+  res.json({ enabled: true, port: 9050, mappings: {} });
+});
+
+// API para ler as configurações filtradas para um Relay específico de uma loja
+app.get('/api/toledo/relay-config', (req, res) => {
+  const { store } = req.query;
+  const storeSlug = store ? store.toLowerCase() : '';
+  const configPath = path.join(__dirname, 'toledo-config.json');
+  let mappings = {};
+
+  try {
+    if (fs.existsSync(configPath)) {
+      const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+      // Filtra os mapeamentos que pertencem a esta loja específica
+      for (const ip in config.mappings) {
+        if (config.mappings[ip].store.toLowerCase() === storeSlug) {
+          mappings[ip] = config.mappings[ip];
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Erro ao processar relay-config:', err);
+  }
+
+  res.json({ store: storeSlug, mappings });
+});
+
+// API para atualizar as configurações de balanças Toledo
+app.post('/api/toledo/config', (req, res) => {
+  const configPath = path.join(__dirname, 'toledo-config.json');
+  try {
+    const { mappings } = req.body;
+    let config = { enabled: true, port: 9050, mappings: {} };
+    if (fs.existsSync(configPath)) {
+      config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    }
+    config.mappings = mappings || {};
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf8');
+    res.json(config);
+  } catch (err) {
+    console.error('Erro ao salvar toledo-config.json:', err);
+    res.status(500).json({ error: 'Erro ao gravar as configurações de balanças.' });
+  }
+});
+
+// API para receber chamadas de balanças Toledo via Relay Local (HTTP POST)
+app.post('/api/toledo/call', (req, res) => {
+  const { store, sector, number, guiche } = req.body;
+  const storeSlug = store ? store.toLowerCase() : '';
+  const sectorSlug = sector ? sector.toLowerCase() : '';
+
+  if (!STORES[storeSlug] || !SECTORS[sectorSlug]) {
+    return res.status(404).json({ error: 'Loja ou Setor inválido.' });
+  }
+
+  const queue = queues[storeSlug][sectorSlug];
+  let ticket = null;
+  const ticketNum = parseInt(number, 10);
+
+  if (!isNaN(ticketNum) && ticketNum > 0) {
+    const ticketIndex = queue.waiting.findIndex(t => t.number === ticketNum);
+    if (ticketIndex !== -1) {
+      ticket = queue.waiting.splice(ticketIndex, 1)[0];
+    } else {
+      const formatted = `${SECTORS[sectorSlug].prefix}${String(ticketNum).padStart(3, '0')}`;
+      ticket = {
+        number: ticketNum,
+        formatted,
+        loja: storeSlug,
+        sector: sectorSlug,
+        sectorName: SECTORS[sectorSlug].name,
+        socketId: null,
+        createdAt: Date.now()
+      };
+    }
+  } else {
+    // Chamada padrão de próximo se não houver número
+    if (queue.waiting.length === 0) {
+      return res.status(400).json({ error: 'Fila vazia no setor.' });
+    }
+    ticket = queue.waiting.shift();
+  }
+
+  ticket.status = 'called';
+  ticket.calledAt = Date.now();
+  ticket.guiche = guiche || 'Balcão';
+
+  if (!queue.called.some(t => t.number === ticket.number)) {
+    queue.called.push(ticket);
+  }
+
+  globalHistory[storeSlug].unshift({
+    formatted: ticket.formatted,
+    sector: ticket.sector,
+    sectorName: ticket.sectorName,
+    calledAt: ticket.calledAt,
+    guiche: ticket.guiche
+  });
+
+  if (globalHistory[storeSlug].length > 10) {
+    globalHistory[storeSlug].pop();
+  }
+
+  triggerCall(storeSlug, ticket);
+  res.json({ success: true, ticket });
+});
+
+// Endpoint para download do script do Agente Local (Relay)
+app.get('/api/toledo/download-relay', (req, res) => {
+  const filePath = path.join(__dirname, 'toledo_relay.py');
+  if (fs.existsSync(filePath)) {
+    res.download(filePath, 'toledo_relay.py');
+  } else {
+    res.status(404).send('Script do agente não encontrado no servidor.');
+  }
 });
 
 // Rota dinâmica para Clientes de uma filial e setor
@@ -202,6 +339,31 @@ io.on('connection', (socket) => {
           ticket = foundInCalled;
           ticket.socketId = socket.id;
           if (subscription) ticket.subscription = subscription;
+        } else {
+          // Se o ticket existe fisicamente mas não está na memória do servidor,
+          // nós o criamos para permitir o acompanhamento pelo cliente!
+          const ticketNum = parseInt(existingTicket.number);
+          if (!isNaN(ticketNum) && ticketNum > 0) {
+            // Atualiza lastNumber se for maior
+            if (ticketNum > queues[storeSlug][sector].lastNumber) {
+              queues[storeSlug][sector].lastNumber = ticketNum;
+            }
+
+            const formatted = `${SECTORS[sector].prefix}${String(ticketNum).padStart(3, '0')}`;
+            ticket = {
+              number: ticketNum,
+              formatted,
+              loja: storeSlug,
+              sector,
+              sectorName: SECTORS[sector].name,
+              socketId: socket.id,
+              createdAt: Date.now(),
+              status: 'waiting',
+              subscription: subscription || null
+            };
+            queues[storeSlug][sector].waiting.push(ticket);
+            queues[storeSlug][sector].waiting.sort((a, b) => a.number - b.number);
+          }
         }
       }
     }
@@ -243,7 +405,7 @@ io.on('connection', (socket) => {
 
   // Atendente chama o próximo cliente na loja
   socket.on('call_next', (data) => {
-    const { loja, sector } = data || {};
+    const { loja, sector, guiche } = data || {};
     const storeSlug = loja ? loja.toLowerCase() : '';
     if (!STORES[storeSlug] || !SECTORS[sector]) return;
 
@@ -255,6 +417,7 @@ io.on('connection', (socket) => {
     const ticket = queue.waiting.shift();
     ticket.status = 'called';
     ticket.calledAt = Date.now();
+    ticket.guiche = guiche || 'Balcão';
 
     queue.called.push(ticket);
 
@@ -263,7 +426,8 @@ io.on('connection', (socket) => {
       formatted: ticket.formatted,
       sector: ticket.sector,
       sectorName: ticket.sectorName,
-      calledAt: ticket.calledAt
+      calledAt: ticket.calledAt,
+      guiche: ticket.guiche
     });
     if (globalHistory[storeSlug].length > 10) {
       globalHistory[storeSlug].pop();
@@ -274,7 +438,7 @@ io.on('connection', (socket) => {
 
   // Atendente solicita re-chamada (Recall) na loja
   socket.on('recall_ticket', (data) => {
-    const { loja, sector } = data || {};
+    const { loja, sector, guiche } = data || {};
     const storeSlug = loja ? loja.toLowerCase() : '';
     if (!STORES[storeSlug] || !SECTORS[sector]) return;
 
@@ -285,12 +449,16 @@ io.on('connection', (socket) => {
       return socket.emit('error_message', 'Nenhuma senha chamada anteriormente neste setor.');
     }
 
+    if (guiche) {
+      lastCalled.guiche = guiche;
+    }
+
     triggerCall(storeSlug, lastCalled, true);
   });
 
   // Atendente chama uma senha manual específica na loja
   socket.on('call_specific', (data) => {
-    const { loja, sector, number } = data || {};
+    const { loja, sector, number, guiche } = data || {};
     const storeSlug = loja ? loja.toLowerCase() : '';
     if (!STORES[storeSlug] || !SECTORS[sector]) return;
 
@@ -314,21 +482,24 @@ io.on('connection', (socket) => {
         sector,
         sectorName: SECTORS[sector].name,
         socketId: null,
-        createdAt: Date.now(),
-        status: 'called'
+        createdAt: Date.now()
       };
     }
 
     ticket.status = 'called';
     ticket.calledAt = Date.now();
+    ticket.guiche = guiche || 'Balcão';
 
-    queue.called.push(ticket);
+    if (!queue.called.some(t => t.number === ticket.number)) {
+      queue.called.push(ticket);
+    }
 
     globalHistory[storeSlug].unshift({
       formatted: ticket.formatted,
       sector: ticket.sector,
       sectorName: ticket.sectorName,
-      calledAt: ticket.calledAt
+      calledAt: ticket.calledAt,
+      guiche: ticket.guiche
     });
     if (globalHistory[storeSlug].length > 10) {
       globalHistory[storeSlug].pop();
@@ -445,6 +616,9 @@ function triggerCall(loja, ticket, isRecall = false) {
   // 4. Atualiza filas
   broadcastQueueUpdates(loja, ticket.sector);
 }
+
+// Inicializa escuta de balanças Toledo
+initToledoListener(io, queues, globalHistory, STORES, SECTORS, triggerCall, broadcastQueueUpdates);
 
 server.listen(PORT, () => {
   console.log('=================================================');

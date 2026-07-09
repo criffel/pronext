@@ -169,6 +169,35 @@
       <div style="padding: 2rem; color: var(--text-muted);">Carregando setores disponíveis...</div>
     </div>
 
+    <!-- Acompanhar Senha Física -->
+    <div class="glass-card" style="margin-top: 2rem; padding: 1.5rem; text-align: left; max-width: 100%;">
+      <div id="btn-toggle-physical-area" style="text-align: center; cursor: pointer;">
+        <p style="color: var(--text-secondary); margin: 0; font-size: 0.95rem; font-weight: 600;">
+          <i class="fa-solid fa-ticket" style="margin-right: 0.5rem; color: #38bdf8;"></i>
+          Já possui uma senha física (balança / impressa)?
+        </p>
+        <span style="color: #38bdf8; font-size: 0.85rem; font-weight: 700; text-transform: uppercase; margin-top: 0.5rem; display: inline-block;">Acompanhar no Celular</span>
+      </div>
+
+      <div id="form-physical-area" style="display: none; margin-top: 1rem; border-top: 1px solid var(--border-glass); padding-top: 1rem;">
+        <form id="form-track-physical">
+          <div class="form-group" style="margin-bottom: 1rem;">
+            <label for="select-physical-sector" style="font-size: 0.8rem; margin-bottom: 0.25rem;">Selecione o Setor</label>
+            <select id="select-physical-sector" required style="padding: 0.75rem; font-size: 0.9rem;">
+              <!-- Populado via JS -->
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom: 1.25rem;">
+            <label for="input-physical-number" style="font-size: 0.8rem; margin-bottom: 0.25rem;">Número da Senha</label>
+            <input type="number" id="input-physical-number" placeholder="Ex: 45" required min="1" style="padding: 0.75rem; font-size: 0.9rem;">
+          </div>
+          <button type="submit" class="btn btn-primary" style="padding: 0.75rem; font-size: 0.95rem;">
+            <i class="fa-solid fa-eye"></i> Acompanhar Atendimento
+          </button>
+        </form>
+      </div>
+    </div>
+
     <footer style="color: var(--text-muted); font-size: 0.85rem; margin-top: 2rem;">
       FilaPro © 2026 - Central de Autoatendimento
     </footer>
@@ -194,6 +223,10 @@
           const sectorsList = document.getElementById('sectors-list');
           sectorsList.innerHTML = '';
 
+          // Popula select de setores físicos
+          const selectPhysicalSector = document.getElementById('select-physical-sector');
+          selectPhysicalSector.innerHTML = '<option value="" disabled selected>Escolha o setor...</option>';
+
           const icons = {
             acougue: 'fa-drumstick-bite',
             padaria: 'fa-bread-slice',
@@ -204,6 +237,8 @@
 
           for (const key in config.sectors) {
             const sector = config.sectors[key];
+
+            // Adiciona botão na lista
             const btn = document.createElement('button');
             btn.className = `sector-btn ${key}`;
             btn.innerHTML = `
@@ -218,7 +253,49 @@
               window.location.href = `/cliente/${storeSlug}/${key}`;
             });
             sectorsList.appendChild(btn);
+
+            // Popula select
+            const opt = document.createElement('option');
+            opt.value = key;
+            opt.textContent = sector.name;
+            selectPhysicalSector.appendChild(opt);
           }
+
+          // Controle de exibição do formulário
+          const btnToggle = document.getElementById('btn-toggle-physical-area');
+          const formArea = document.getElementById('form-physical-area');
+          btnToggle.addEventListener('click', () => {
+            formArea.style.display = formArea.style.display === 'none' ? 'block' : 'none';
+          });
+
+          // Controle do envio do formulário de acompanhamento
+          const formTrack = document.getElementById('form-track-physical');
+          formTrack.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const sectorKey = selectPhysicalSector.value;
+            const number = parseInt(document.getElementById('input-physical-number').value, 10);
+            if (!sectorKey || isNaN(number)) return;
+
+            const sectorObj = config.sectors[sectorKey];
+            const formatted = `${sectorObj.prefix}${String(number).padStart(3, '0')}`;
+            const ticket = {
+              number: number,
+              formatted: formatted,
+              loja: storeSlug,
+              sector: sectorKey,
+              sectorName: sectorObj.name,
+              socketId: null,
+              createdAt: Date.now(),
+              status: 'waiting',
+              subscription: null
+            };
+
+            // Armazena no localStorage do cliente como se fosse um ticket ativo
+            localStorage.setItem(`filapro_ticket_${storeSlug}_${sectorKey}`, JSON.stringify(ticket));
+
+            // Redireciona para a página do cliente
+            window.location.href = `/cliente/${storeSlug}/${sectorKey}`;
+          });
         })
         .catch(err => {
           console.error(err);

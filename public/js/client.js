@@ -143,6 +143,17 @@ socket.on('your_turn', ({ ticket, isRecall }) => {
   // Modifica tela para alerta
   document.body.classList.add('called-alert');
   elAlertSector.textContent = ticket.sectorName;
+  
+  const elAlertGuiche = document.getElementById('alert-guiche');
+  if (elAlertGuiche) {
+    if (ticket.guiche) {
+      elAlertGuiche.textContent = ticket.guiche;
+      elAlertGuiche.style.display = 'block';
+    } else {
+      elAlertGuiche.style.display = 'none';
+    }
+  }
+  
   elAlertContainer.style.display = 'flex';
   
   // Executa efeitos

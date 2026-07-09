@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FilaPro - Configuração de Balanças Toledo</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .config-container {
+      display: grid;
+      grid-template-columns: 1fr 1.5fr;
+      gap: 2rem;
+      width: 100%;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    @media (max-width: 768px) {
+      .config-container {
+        grid-template-columns: 1fr;
+      }
+    }
+    .config-card {
+      max-width: 100%;
+      text-align: left;
+    }
+    .config-card::before {
+      background: linear-gradient(90deg, #38bdf8, #818cf8);
+    }
+    .table-container {
+      background: var(--bg-dark-card);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--border-radius-lg);
+      padding: 2rem;
+      box-shadow: var(--shadow-neon);
+      position: relative;
+      overflow: hidden;
+    }
+    .table-container::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #818cf8, #38bdf8);
+    }
+    .table-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border-glass);
+    }
+    .table-header h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #fff;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+    th, td {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border-glass);
+    }
+    th {
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      font-size: 0.85rem;
+      letter-spacing: 0.05em;
+    }
+    td {
+      color: var(--text-primary);
+      font-size: 0.95rem;
+    }
+    tr:last-child td {
+      border-bottom: none;
+    }
+    .btn-delete {
+      background: rgba(239, 68, 68, 0.1);
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      padding: 0.5rem 0.75rem;
+      border-radius: var(--border-radius-sm);
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 0.85rem;
+      transition: var(--transition-smooth);
+    }
+    .btn-delete:hover {
+      background: #ef4444;
+      color: #fff;
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+    }
+    .top-actions {
+      margin-bottom: 2rem;
+      width: 100%;
+      max-width: 1100px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .link-back {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: var(--transition-smooth);
+    }
+    .link-back:hover {
+      color: #38bdf8;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1><i class="fa-solid fa-gears"></i> FilaPro</h1>
+    <p>Painel de Configuração de Balanças Toledo</p>
+  </header>
+
+  <main style="max-width: 1100px; justify-content: flex-start; align-items: stretch; padding-top: 1.5rem;">
+    
+    <div class="top-actions">
+      <a href="/" class="link-back"><i class="fa-solid fa-arrow-left"></i> Voltar ao Seletor de Lojas</a>
+    </div>
+
+    <div class="config-container">
+      
+      <!-- Formulário de Cadastro -->
+      <div class="glass-card config-card">
+        <h2 style="font-size: 1.5rem; margin-bottom: 1.5rem; color: #fff;">
+          <i class="fa-solid fa-circle-plus" style="color: #38bdf8; margin-right: 0.25rem;"></i> Cadastrar Balança
+        </h2>
+        
+        <form id="form-scale">
+          <div class="form-group">
+            <label for="input-ip">Endereço IP da Balança</label>
+            <input type="text" id="input-ip" placeholder="Ex: 192.168.1.150" required pattern="^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$">
+          </div>
+
+          <div class="form-group">
+            <label for="select-store">Filial (Empresa)</label>
+            <select id="select-store" required>
+              <option value="" disabled selected>Carregando lojas...</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="select-sector">Setor da Fila</label>
+            <select id="select-sector" required>
+              <option value="" disabled selected>Carregando setores...</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="input-guiche">Identificação do Guichê / Balcão</label>
+            <input type="text" id="input-guiche" placeholder="Ex: Balança 1, Balcão Frios" required>
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">
+            <i class="fa-solid fa-floppy-disk"></i> Salvar Balança
+          </button>
+        </form>
+      </div>
+
+      <!-- Tabela de Balanças Cadastradas -->
+      <div class="table-container">
+        <div class="table-header">
+          <h2>Balanças Cadastradas</h2>
+        </div>
+        <div style="overflow-x: auto;">
+          <table id="table-scales">
+            <thead>
+              <tr>
+                <th>IP da Balança</th>
+                <th>Filial / Empresa</th>
+                <th>Setor</th>
+                <th>Guichê</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="scales-list-tbody">
+              <tr>
+                <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2rem;">Carregando configurações...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Seção de Instruções do Agente Local (Relay) -->
+    <div class="glass-card" style="margin-top: 2rem; max-width: 100%; text-align: left; padding: 2rem;">
+      <h2 style="font-size: 1.5rem; margin-bottom: 1rem; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
+        <i class="fa-brands fa-python" style="color: #38bdf8;"></i> Agente Local (Toledo Relay)
+      </h2>
+      <p style="color: var(--text-secondary); margin-bottom: 1.5rem; line-height: 1.6;">
+        Caso seu servidor central do FilaPro esteja rodando na nuvem e as balanças locais não consigam enxergá-lo diretamente (devido a firewalls ou regras de NAT), você deve instalar o <strong>Agente Toledo Relay</strong> em Python em cada servidor de carga local das suas lojas.
+      </p>
+
+      <div style="background: rgba(0,0,0,0.2); border: 1px solid var(--border-glass); border-radius: var(--border-radius-md); padding: 1.25rem; margin-bottom: 1.5rem;">
+        <div style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; margin-bottom: 0.5rem;">
+          URL para o Assistente do Agente Local
+        </div>
+        <div style="display: flex; gap: 1rem; align-items: center; background: rgba(0,0,0,0.3); padding: 0.75rem; border-radius: var(--border-radius-md); border: 1px solid rgba(255,255,255,0.05); flex-wrap: wrap;">
+          <code id="relay-url-text" style="font-family: monospace; font-size: 1.05rem; color: #38bdf8; word-break: break-all; flex: 1;">http://...</code>
+          <button onclick="copyRelayUrl()" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; margin: 0; white-space: nowrap;">
+            <i class="fa-solid fa-copy"></i> Copiar URL
+          </button>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: center; justify-content: space-between;">
+        <div style="color: var(--text-secondary); font-size: 0.9rem;">
+          <i class="fa-solid fa-circle-info" style="color: #38bdf8; margin-right: 0.25rem;"></i>
+          O assistente interativo do script solicitará esta URL para se conectar automaticamente e puxar as balanças cadastradas acima.
+        </div>
+        <a href="/api/toledo/download-relay" class="btn btn-primary" style="margin: 0; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);">
+          <i class="fa-solid fa-download"></i> Baixar Script do Agente (.py)
+        </a>
+      </div>
+    </div>
+
+  </main>
+
+  <footer style="text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.85rem;">
+    FilaPro © 2026 - Central de Configuração Toledo
+  </footer>
+
+  <script src="/js/config.js"></script>
+</body>
+</html>

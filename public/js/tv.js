@@ -183,10 +183,22 @@ socket.on('play_call', ({ ticket, isRecall, globalHistory }) => {
   }
 });
 
-// ─── Exibição da Senha ───────────────────────────────────
 function showCall(ticket) {
   elMainTicket.textContent = ticket.formatted;
   elMainSector.textContent = ticket.sectorName;
+
+  const elMainGuiche = document.getElementById('tv-main-guiche');
+  const elMetaSep = document.getElementById('tv-main-meta-sep');
+  if (elMainGuiche && elMetaSep) {
+    if (ticket.guiche) {
+      elMainGuiche.textContent = ticket.guiche;
+      elMainGuiche.style.display = 'inline';
+      elMetaSep.style.display = 'inline-block';
+    } else {
+      elMainGuiche.style.display = 'none';
+      elMetaSep.style.display = 'none';
+    }
+  }
 
   // Remove classes de setor anteriores e aplica o novo
   elCallOverlay.className = `active ${ticket.sector}`;
@@ -214,6 +226,7 @@ function renderHistory(historyList = []) {
       <div class="history-num">${item.formatted}</div>
       <div class="history-info">
         <div class="history-sector">${item.sectorName}</div>
+        <div class="history-guiche" style="font-size: 1.8vh; font-weight: 600; color: var(--muted);">${item.guiche || ''}</div>
         <div class="history-time">${timeAgo}</div>
       </div>
       <div class="history-tag">${idx === 0 ? '● Último' : `${idx + 1}º`}</div>
