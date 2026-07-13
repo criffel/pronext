@@ -200,10 +200,21 @@ function updateWaitingCount(position) {
   }
 }
 
+let globalAudioCtx = null;
+function getAudioContext() {
+  if (!globalAudioCtx || globalAudioCtx.state === 'closed') {
+    globalAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (globalAudioCtx.state === 'suspended') {
+    globalAudioCtx.resume();
+  }
+  return globalAudioCtx;
+}
+
 // Sintetizador de Áudio nativo usando Web Audio API
 function playChime() {
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = getAudioContext();
     const now = ctx.currentTime;
     
     // Primeiro tom (Ding - Agudo)

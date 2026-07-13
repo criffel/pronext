@@ -148,6 +148,7 @@ function initToledoListener(io, queues, globalHistory, STORES, SECTORS, triggerC
             socketId: null,
             createdAt: Date.now()
           };
+          queue.lastNumber = Math.max(queue.lastNumber, ticketNum);
         }
       } else {
         // Se a balança conectar mas não enviar números (ou se for uma chamada padrão de "+" sem número),

@@ -14,10 +14,13 @@ const io = new Server(server);
 const PORT = process.env.PORT || 3000;
 
 // Configuração do Web Push (VAPID) para notificações em background/tela bloqueada
+const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || 'BODBKn45anyO-H_lFXzj3XbXAKd7EeAm95cwqbszUCki5HXuFoyvpAla6cJvZHKYglAvlMsGgGCMT-egm4_9GS8';
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || 'I8hkvQychaAdJRnnn7UjN1cQ1AXz7Bq-OjkEUgqtmns';
+
 webpush.setVapidDetails(
   'mailto:cristiano.timachado@gmail.com',
-  'BODBKn45anyO-H_lFXzj3XbXAKd7EeAm95cwqbszUCki5HXuFoyvpAla6cJvZHKYglAvlMsGgGCMT-egm4_9GS8',
-  'I8hkvQychaAdJRnnn7UjN1cQ1AXz7Bq-OjkEUgqtmns'
+  VAPID_PUBLIC_KEY,
+  VAPID_PRIVATE_KEY
 );
 
 // Lista real de lojas do grupo
@@ -329,7 +332,7 @@ app.get('/api/config', (req, res) => {
     port: PORT,
     stores: STORES,
     sectors: SECTORS,
-    publicVapidKey: 'BODBKn45anyO-H_lFXzj3XbXAKd7EeAm95cwqbszUCki5HXuFoyvpAla6cJvZHKYglAvlMsGgGCMT-egm4_9GS8'
+    publicVapidKey: VAPID_PUBLIC_KEY
   });
 });
 
