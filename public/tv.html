@@ -40,24 +40,91 @@
 
     /* ─── LAYOUT PRINCIPAL ─────────────────────────── */
     #tv-root {
-      display: grid;
-      grid-template-rows: 7vh 66vh 27vh;
+      display: flex;
+      flex-direction: column;
       width: 100vw;
       height: 100vh;
       overflow: hidden;
     }
 
+    /* ─── TOPBAR ───────────────────────────────────── */
+    #tv-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 3vw;
+      height: 7vh;
+      background: rgba(0,0,0,0.6);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(12px);
+      z-index: 50;
+      position: relative;
+    }
+    .topbar-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.8vw;
+      font-family: var(--font-display);
+      font-size: 3.2vh;
+      letter-spacing: 0.12em;
+      color: var(--text);
+    }
+    .topbar-brand span { color: var(--accent); }
+    .topbar-store {
+      font-size: 2.2vh;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    #tv-store-name { color: var(--text); }
+    .topbar-clock {
+      display: flex;
+      align-items: center;
+      gap: 1.2vw;
+    }
+    #tv-clock {
+      font-family: var(--font-display);
+      font-size: 3.6vh;
+      letter-spacing: 0.06em;
+      color: var(--text);
+      min-width: 9vw;
+      text-align: right;
+    }
+    #tv-date {
+      font-size: 1.6vh;
+      color: var(--muted);
+      text-align: right;
+    }
+    .topbar-dot {
+      width: 1.2vh;
+      height: 1.2vh;
+      border-radius: 50%;
+      background: #22c55e;
+      box-shadow: 0 0 8px #22c55e;
+      animation: blink 2s infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
     #tv-main-content {
       display: flex;
       width: 100vw;
-      height: 100%;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    #tv-left-column {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      overflow: hidden;
     }
 
     /* ─── SLIDER PRINCIPAL ─────────────────────────── */
     #tv-slider-area {
       position: relative;
-      overflow: hidden;
       flex: 1;
+      overflow: hidden;
     }
 
     /* ─── PAINEL DE ESPERA (DIREITA) ───────────────── */
@@ -482,6 +549,7 @@
       background: rgba(0,0,0,0.45);
       border-top: 1px solid var(--border);
       box-sizing: border-box;
+      height: 27vh;
       overflow: hidden;
     }
 
@@ -624,8 +692,9 @@
   <!-- ── MEIO: SLIDER + WAITING PANEL ── -->
   <div id="tv-main-content">
 
-    <!-- ── ÁREA DO SLIDER ── -->
-    <div id="tv-slider-area">
+    <div id="tv-left-column">
+      <!-- ── ÁREA DO SLIDER ── -->
+      <div id="tv-slider-area">
 
     <!-- Slide Geral (QR Code) -->
     <div class="mk-slide general active" data-index="0">
@@ -820,7 +889,30 @@
       </div>
     </div>
 
-    </div><!-- /slider-area -->
+      </div><!-- /slider-area -->
+
+      <!-- ── HISTÓRICO ── -->
+      <div id="tv-history-panel">
+        <div class="history-item history-empty">
+          <div class="history-num" style="color:var(--muted)">---</div>
+          <div class="history-info">
+            <div class="history-sector">Aguardando</div>
+          </div>
+        </div>
+        <div class="history-item history-empty">
+          <div class="history-num" style="color:var(--muted)">---</div>
+          <div class="history-info">
+            <div class="history-sector">Aguardando</div>
+          </div>
+        </div>
+        <div class="history-item history-empty">
+          <div class="history-num" style="color:var(--muted)">---</div>
+          <div class="history-info">
+            <div class="history-sector">Aguardando</div>
+          </div>
+        </div>
+      </div><!-- /history-panel -->
+    </div><!-- /left-column -->
 
     <!-- ── PAINEL DE ESPERA (LADO DIREITO) ── -->
     <div id="tv-waiting-panel">
@@ -833,28 +925,6 @@
     </div>
 
   </div><!-- /main-content -->
-
-  <!-- ── HISTÓRICO ── -->
-  <div id="tv-history-panel">
-    <div class="history-item history-empty">
-      <div class="history-num" style="color:var(--muted)">---</div>
-      <div class="history-info">
-        <div class="history-sector">Aguardando</div>
-      </div>
-    </div>
-    <div class="history-item history-empty">
-      <div class="history-num" style="color:var(--muted)">---</div>
-      <div class="history-info">
-        <div class="history-sector">Aguardando</div>
-      </div>
-    </div>
-    <div class="history-item history-empty">
-      <div class="history-num" style="color:var(--muted)">---</div>
-      <div class="history-info">
-        <div class="history-sector">Aguardando</div>
-      </div>
-    </div>
-  </div>
 
 </div><!-- /tv-root -->
 
