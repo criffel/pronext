@@ -5,3 +5,6 @@ node_modules/
 package-lock.json
 
 .vercel
+scale_debug.log
+__pycache__/
+data.json

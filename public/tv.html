@@ -47,68 +47,96 @@
       overflow: hidden;
     }
 
-    /* ─── TOPBAR ───────────────────────────────────── */
-    #tv-topbar {
+    #tv-main-content {
       display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 3vw;
-      background: rgba(0,0,0,0.6);
-      border-bottom: 1px solid var(--border);
-      backdrop-filter: blur(12px);
-      z-index: 50;
-      position: relative;
+      width: 100vw;
+      height: 100%;
     }
-    .topbar-brand {
-      display: flex;
-      align-items: center;
-      gap: 0.8vw;
-      font-family: var(--font-display);
-      font-size: 3.2vh;
-      letter-spacing: 0.12em;
-      color: var(--text);
-    }
-    .topbar-brand span { color: var(--accent); }
-    .topbar-store {
-      font-size: 2.2vh;
-      font-weight: 700;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-    }
-    #tv-store-name { color: var(--text); }
-    .topbar-clock {
-      display: flex;
-      align-items: center;
-      gap: 1.2vw;
-    }
-    #tv-clock {
-      font-family: var(--font-display);
-      font-size: 3.6vh;
-      letter-spacing: 0.06em;
-      color: var(--text);
-      min-width: 9vw;
-      text-align: right;
-    }
-    #tv-date {
-      font-size: 1.6vh;
-      color: var(--muted);
-      text-align: right;
-    }
-    .topbar-dot {
-      width: 1.2vh;
-      height: 1.2vh;
-      border-radius: 50%;
-      background: #22c55e;
-      box-shadow: 0 0 8px #22c55e;
-      animation: blink 2s infinite;
-    }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
     /* ─── SLIDER PRINCIPAL ─────────────────────────── */
     #tv-slider-area {
       position: relative;
       overflow: hidden;
+      flex: 1;
+    }
+
+    /* ─── PAINEL DE ESPERA (DIREITA) ───────────────── */
+    #tv-waiting-panel {
+      width: 22vw;
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(12px);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 2.5vh 1.5vw;
+      z-index: 10;
+    }
+    .waiting-header {
+      font-size: 2.4vh;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 1.5vh;
+      display: flex;
+      align-items: center;
+      gap: 1vw;
+    }
+    .waiting-header i { color: var(--accent); }
+    .waiting-list {
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 1.2vh;
+    }
+    .waiting-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 1.2vh 1.5vw;
+      border-radius: 1.2vh;
+      animation: fadeInRight 0.5s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .waiting-item::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 4px;
+      border-radius: 0 2px 2px 0;
+    }
+    .waiting-item.acougue::before    { background: var(--c-acougue); }
+    .waiting-item.padaria::before    { background: var(--c-padaria); }
+    .waiting-item.rotisseria::before { background: var(--c-rotisseria); }
+    .waiting-item.frios::before      { background: var(--c-frios); }
+    .waiting-item.peixaria::before   { background: var(--c-peixaria); }
+    .waiting-item.general::before    { background: var(--c-general); }
+
+    .waiting-item-num {
+      font-family: var(--font-display);
+      font-size: 4vh;
+      color: var(--text);
+      line-height: 1;
+    }
+    .waiting-item-sector {
+      font-size: 1.6vh;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+    .waiting-empty {
+      color: var(--muted);
+      font-size: 2vh;
+      text-align: center;
+      margin-top: 5vh;
+    }
+    @keyframes fadeInRight {
+      from { opacity: 0; transform: translateX(20px); }
+      to   { opacity: 1; transform: translateX(0); }
     }
 
     .mk-slide {
@@ -593,8 +621,11 @@
     </div>
   </header>
 
-  <!-- ── ÁREA DO SLIDER ── -->
-  <div id="tv-slider-area">
+  <!-- ── MEIO: SLIDER + WAITING PANEL ── -->
+  <div id="tv-main-content">
+
+    <!-- ── ÁREA DO SLIDER ── -->
+    <div id="tv-slider-area">
 
     <!-- Slide Geral (QR Code) -->
     <div class="mk-slide general active" data-index="0">
@@ -789,7 +820,19 @@
       </div>
     </div>
 
-  </div><!-- /slider-area -->
+    </div><!-- /slider-area -->
+
+    <!-- ── PAINEL DE ESPERA (LADO DIREITO) ── -->
+    <div id="tv-waiting-panel">
+      <div class="waiting-header">
+        <i class="fa-solid fa-users"></i> Em Espera
+      </div>
+      <div id="tv-waiting-list" class="waiting-list">
+        <div class="waiting-empty">Aguardando...</div>
+      </div>
+    </div>
+
+  </div><!-- /main-content -->
 
   <!-- ── HISTÓRICO ── -->
   <div id="tv-history-panel">

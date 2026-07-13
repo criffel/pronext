@@ -17,44 +17,60 @@ function loadConfig() {
   return { enabled: true, port: 9050, mappings: {} };
 }
 
+
 // Analisa se o pacote recebido é um ticket texto válido ou um pacote de controle binário (heartbeat)
 function parseTicketPayload(data) {
-  let text = '';
-  let isBinary = false;
+  if (data.length === 0) return { isBinary: true, text: '' };
 
-  if (data.length === 0) return { isBinary: false, text: '' };
+  // Protocolo de Senha MIT da Toledo Prix 5/6:
+  // Pacote de 22 bytes: STX (0x02) + 2 bytes opcode ASCII + ... + DLE (0x10) + ETX (0x03) + checksum
+  // Opcode "06" = heartbeat/status (ignorar silenciosamente)
+  // Opcode "01" = atendente pressionou o botão MIT (chamar próximo)
+  if (data.length === 22 && data[0] === 0x02 && data[19] === 0x10 && data[20] === 0x03) {
+    const opcode = data.toString('ascii', 1, 3);
 
-  // Se começar com STX (0x02), verificamos o conteúdo até o ETX (0x03)
+    if (opcode === '06') {
+      // Heartbeat puro - ignora sem processar
+      return { isBinary: true, text: '' };
+    }
+
+    if (opcode === '01') {
+      // Atendente pressionou o botão MIT na balança.
+      // O número interno da balança é irrelevante para o FilaPro (fila virtual).
+      // Retornamos texto vazio para acionar a lógica de "chamar próximo da fila virtual".
+      console.log(`[Toledo TCP] ✓ Botão MIT pressionado (opcode=${opcode}) — chamando próximo da fila virtual.`);
+      return { isBinary: false, text: '' };
+    }
+
+    // Outros opcodes - tratar como binário/desconhecido
+    return { isBinary: true, text: '' };
+  }
+
+  // Protocolo ASCII simples (ex: simulador ou balanças sem MIT):
+  // Se começar com STX (0x02), verifica o conteúdo até o ETX (0x03)
   if (data[0] === 0x02) {
     const etxIndex = data.indexOf(0x03);
     if (etxIndex !== -1) {
-      // Verifica se há bytes binários entre STX e ETX
+      let hasBinary = false;
       for (let i = 1; i < etxIndex; i++) {
-        if (data[i] < 32 || data[i] > 126) {
-          isBinary = true;
-          break;
-        }
+        if (data[i] < 32 || data[i] > 126) { hasBinary = true; break; }
       }
-      if (!isBinary) {
-        text = data.toString('ascii', 1, etxIndex).trim();
-      }
-    } else {
-      isBinary = true; // Se tem STX mas não tem ETX, tratamos como binário ou incompleto
-    }
-  } else {
-    // Se não tiver STX, verifica se todos os bytes são ASCII imprimíveis (32-126)
-    for (let i = 0; i < data.length; i++) {
-      if (data[i] < 32 || data[i] > 126) {
-        isBinary = true;
-        break;
+      if (!hasBinary) {
+        const text = data.toString('ascii', 1, etxIndex).trim();
+        return { isBinary: false, text };
       }
     }
-    if (!isBinary) {
-      text = data.toString('ascii').trim();
-    }
+    return { isBinary: true, text: '' };
   }
 
-  return { isBinary, text };
+  // Sem STX: verifica se todos os bytes são ASCII imprimíveis (32-126)
+  for (let i = 0; i < data.length; i++) {
+    if (data[i] < 32 || data[i] > 126) {
+      return { isBinary: true, text: '' };
+    }
+  }
+  const text = data.toString('ascii').trim();
+  return { isBinary: false, text };
 }
 
 function initToledoListener(io, queues, globalHistory, STORES, SECTORS, triggerCall, broadcastQueueUpdates) {

@@ -43,20 +43,52 @@ const SECTORS = {
 };
 
 // Inicialização do estado das filas e histórico por filial em memória
-const queues = {};
-const globalHistory = {};
+const DATA_FILE = path.join(__dirname, 'data.json');
+let queues = {};
+let globalHistory = {};
 
-for (const storeSlug in STORES) {
-  queues[storeSlug] = {};
-  globalHistory[storeSlug] = [];
-  for (const sectorSlug in SECTORS) {
-    queues[storeSlug][sectorSlug] = {
-      lastNumber: 0,
-      waiting: [],
-      called: []
-    };
+function initQueues() {
+  for (const storeSlug in STORES) {
+    queues[storeSlug] = {};
+    globalHistory[storeSlug] = [];
+    for (const sectorSlug in SECTORS) {
+      queues[storeSlug][sectorSlug] = {
+        lastNumber: 0,
+        waiting: [],
+        called: []
+      };
+    }
   }
 }
+
+function loadData() {
+  if (fs.existsSync(DATA_FILE)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+      if (data.queues && data.globalHistory) {
+        queues = data.queues;
+        globalHistory = data.globalHistory;
+        console.log('📦 Dados das filas carregados do disco com sucesso.');
+        return;
+      }
+    } catch (err) {
+      console.error('⚠️ Erro ao carregar data.json. Iniciando com filas vazias.', err);
+    }
+  }
+  initQueues();
+}
+
+function saveData() {
+  try {
+    const data = { queues, globalHistory };
+    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
+  } catch (err) {
+    console.error('⚠️ Erro ao salvar data.json:', err);
+  }
+}
+
+// Carrega os dados na inicialização
+loadData();
 
 app.use(express.json());
 
@@ -520,6 +552,8 @@ io.on('connection', (socket) => {
       // Filtra histórico daquela loja
       globalHistory[storeSlug] = globalHistory[storeSlug].filter(h => h.sector !== sector);
 
+      saveData();
+
       broadcastQueueUpdates(storeSlug, sector);
       io.to(`${storeSlug}:tvs`).emit('initial_state', {
         globalHistory: globalHistory[storeSlug],
@@ -550,6 +584,7 @@ function getQueuesStatus(loja) {
   for (const sector in SECTORS) {
     status[sector] = {
       waitingCount: queues[loja][sector].waiting.length,
+      waitingList: queues[loja][sector].waiting.map(t => ({ number: t.number, formatted: t.formatted })),
       lastCalled: queues[loja][sector].called[queues[loja][sector].called.length - 1] || null
     };
   }
@@ -578,6 +613,9 @@ function broadcastQueueUpdates(loja, sector) {
       });
     }
   });
+
+  // Salva o estado atual no disco
+  saveData();
 }
 
 function triggerCall(loja, ticket, isRecall = false) {

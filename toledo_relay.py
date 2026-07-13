@@ -182,6 +182,18 @@ def parse_ticket_payload(data):
     if not data:
         return False, ""
 
+    # Protocolo de Senha MIT da Toledo: Pacote de 22 bytes demarcado com STX (0x02) e DLE ETX (0x10 0x03)
+    if len(data) == 22 and data[0] == 0x02 and data[19] == 0x10 and data[20] == 0x03:
+        try:
+            opcode = data[1:3].decode('ascii', errors='ignore')
+            if opcode == '06':
+                return True, "" # Heartbeat - ignorar
+            if opcode == '01':
+                return False, "" # Botão MIT pressionado
+        except Exception as e:
+            print(f"[Relay] Erro ao analisar sinal MIT da balança: {e}")
+        return True, ""
+
     # Se o pacote começar com STX (0x02), verifica integridade até o ETX (0x03)
     if data[0] == 0x02:
         try:
@@ -273,8 +285,13 @@ def start_server():
             hex_data = data.hex().upper()
             is_binary, text_payload = parse_ticket_payload(data)
             
+            # Envia resposta de confirmação ACK (0x06) que as balanças Toledo exigem
+            try:
+                conn.sendall(b'\x06')
+            except Exception:
+                pass
+
             if is_binary:
-                # Silenciosamente ignora pacotes binários (heartbeats)
                 conn.close()
                 continue
                 
@@ -299,6 +316,8 @@ def start_server():
                 
             sector = mapping["sector"]
             guiche = mapping["guiche"]
+            
+            # Filtro de guichê por IP já foi feito acima. Não precisamos ler scale_id.
             
             # Busca números no texto
             match = re.search(r'\d+', text_payload)

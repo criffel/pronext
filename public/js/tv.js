@@ -16,6 +16,7 @@ let callTimeout  = null;
 let currentSlideIndex = 0;
 let slideInterval = null;
 let progressAnimation = null;
+let queuesStatusGlobal = {};
 
 const SLIDE_DURATION = 7000; // ms por slide
 const slides = document.querySelectorAll('.mk-slide');
@@ -164,8 +165,17 @@ socket.on('connect', () => {
   socket.emit('register_tv', { loja: storeSlug });
 });
 
-socket.on('initial_state', ({ globalHistory }) => {
+socket.on('initial_state', ({ globalHistory, queuesStatus }) => {
   renderHistory(globalHistory);
+  if (queuesStatus) {
+    queuesStatusGlobal = queuesStatus;
+    renderWaitingList();
+  }
+});
+
+socket.on('queues_status_update', (queuesStatus) => {
+  queuesStatusGlobal = queuesStatus;
+  renderWaitingList();
 });
 
 socket.on('play_call', ({ ticket, isRecall, globalHistory }) => {
@@ -254,6 +264,53 @@ function formatTimeAgo(timestamp) {
   if (diff < 60) return `há ${diff}s`;
   if (diff < 3600) return `há ${Math.floor(diff / 60)}min`;
   return `há ${Math.floor(diff / 3600)}h`;
+}
+
+// ─── Lista de Espera ──────────────────────────────────────
+function renderWaitingList() {
+  const elList = document.getElementById('tv-waiting-list');
+  if (!elList) return;
+  
+  let allWaiting = [];
+  for (const sector in queuesStatusGlobal) {
+    if (queuesStatusGlobal[sector].waitingList) {
+      queuesStatusGlobal[sector].waitingList.forEach(t => {
+        allWaiting.push({
+          sector: sector,
+          formatted: t.formatted
+        });
+      });
+    }
+  }
+  
+  // Limita a 8 clientes para caber na tela com fonte grande
+  allWaiting = allWaiting.slice(0, 8);
+  
+  elList.innerHTML = '';
+  
+  if (allWaiting.length === 0) {
+    elList.innerHTML = `<div class="waiting-empty">Ninguém aguardando...</div>`;
+    return;
+  }
+  
+  const SECTOR_NAMES = {
+    acougue: 'Açougue',
+    padaria: 'Padaria',
+    rotisseria: 'Rotisseria',
+    frios: 'Frios',
+    peixaria: 'Peixaria',
+    general: 'Geral'
+  };
+  
+  allWaiting.forEach(item => {
+    const div = document.createElement('div');
+    div.className = `waiting-item ${item.sector}`;
+    div.innerHTML = `
+      <div class="waiting-item-num">${item.formatted}</div>
+      <div class="waiting-item-sector">${SECTOR_NAMES[item.sector] || item.sector}</div>
+    `;
+    elList.appendChild(div);
+  });
 }
 
 // ─── Áudio ───────────────────────────────────────────────
