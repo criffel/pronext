@@ -1,5 +1,0 @@
-{
-  "CENTRAL_SERVER_BASE_URL": "https://pronext-production.up.railway.app",
-  "STORE_SLUG": "machado-tarumas",
-  "LISTEN_PORT": 9050
-}

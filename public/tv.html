@@ -127,6 +127,34 @@
       overflow: hidden;
     }
 
+    /* ─── QR Card por Setor ────────────────────────── */
+    .slide-instant-qr-card {
+      background: #fff;
+      padding: 1vh;
+      border-radius: 1.5vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5vh;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      width: fit-content;
+      min-width: 12vh;
+    }
+    .slide-instant-qr-card canvas {
+      display: block;
+      max-height: 10vh;
+      max-width: 10vh;
+    }
+    .slide-instant-qr-card span {
+      color: #05060f;
+      font-size: 1.1vh;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      text-align: center;
+      white-space: nowrap;
+    }
+
     /* ─── PAINEL DE ESPERA (DIREITA) ───────────────── */
     #tv-waiting-panel {
       width: 22vw;
@@ -548,7 +576,6 @@
       padding: 1.8vh 2.5vw;
       background: rgba(0,0,0,0.45);
       border-top: 1px solid var(--border);
-      box-sizing: border-box;
       height: 27vh;
       overflow: hidden;
     }
@@ -591,6 +618,7 @@
     .history-item.rotisseria .history-num { color: var(--c-rotisseria); }
     .history-item.frios      .history-num { color: var(--c-frios); }
     .history-item.peixaria   .history-num { color: var(--c-peixaria); }
+    .history-item.general    .history-num { color: var(--c-general); }
 
     .history-info {
       display: flex;
@@ -743,9 +771,9 @@
               <span class="slide-price-val">59,90</span>
               <span class="slide-price-unit">/ kg</span>
             </div>
-            <div class="slide-instant-qr-card" style="background: #fff; padding: 1vh; border-radius: 1.5vh; display: flex; flex-direction: column; align-items: center; gap: 0.5vh; box-shadow: 0 10px 25px rgba(0,0,0,0.5); width: fit-content; min-width: 12vh;">
+            <div class="slide-instant-qr-card">
               <canvas id="qr-tv-acougue" style="display: block; max-height: 10vh; max-width: 10vh;"></canvas>
-              <span style="color: #05060f; font-size: 1.1vh; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; text-align: center; white-space: nowrap;">Senha Rápida</span>
+              <span>Senha Rápida</span>
             </div>
           </div>
         </div>
@@ -769,9 +797,9 @@
               <span class="slide-price-val">24,90</span>
               <span class="slide-price-unit">/ kg</span>
             </div>
-            <div class="slide-instant-qr-card" style="background: #fff; padding: 1vh; border-radius: 1.5vh; display: flex; flex-direction: column; align-items: center; gap: 0.5vh; box-shadow: 0 10px 25px rgba(0,0,0,0.5); width: fit-content; min-width: 12vh;">
+            <div class="slide-instant-qr-card">
               <canvas id="qr-tv-padaria" style="display: block; max-height: 10vh; max-width: 10vh;"></canvas>
-              <span style="color: #05060f; font-size: 1.1vh; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; text-align: center; white-space: nowrap;">Senha Rápida</span>
+              <span>Senha Rápida</span>
             </div>
           </div>
         </div>
@@ -795,9 +823,9 @@
               <span class="slide-price-val">34,90</span>
               <span class="slide-price-unit">/ un</span>
             </div>
-            <div class="slide-instant-qr-card" style="background: #fff; padding: 1vh; border-radius: 1.5vh; display: flex; flex-direction: column; align-items: center; gap: 0.5vh; box-shadow: 0 10px 25px rgba(0,0,0,0.5); width: fit-content; min-width: 12vh;">
+            <div class="slide-instant-qr-card">
               <canvas id="qr-tv-rotisseria" style="display: block; max-height: 10vh; max-width: 10vh;"></canvas>
-              <span style="color: #05060f; font-size: 1.1vh; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; text-align: center; white-space: nowrap;">Senha Rápida</span>
+              <span>Senha Rápida</span>
             </div>
           </div>
         </div>
@@ -821,9 +849,9 @@
               <span class="slide-price-val">18,90</span>
               <span class="slide-price-unit">/ 100g</span>
             </div>
-            <div class="slide-instant-qr-card" style="background: #fff; padding: 1vh; border-radius: 1.5vh; display: flex; flex-direction: column; align-items: center; gap: 0.5vh; box-shadow: 0 10px 25px rgba(0,0,0,0.5); width: fit-content; min-width: 12vh;">
+            <div class="slide-instant-qr-card">
               <canvas id="qr-tv-frios" style="display: block; max-height: 10vh; max-width: 10vh;"></canvas>
-              <span style="color: #05060f; font-size: 1.1vh; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; text-align: center; white-space: nowrap;">Senha Rápida</span>
+              <span>Senha Rápida</span>
             </div>
           </div>
         </div>
@@ -847,9 +875,9 @@
               <span class="slide-price-val">69,90</span>
               <span class="slide-price-unit">/ kg</span>
             </div>
-            <div class="slide-instant-qr-card" style="background: #fff; padding: 1vh; border-radius: 1.5vh; display: flex; flex-direction: column; align-items: center; gap: 0.5vh; box-shadow: 0 10px 25px rgba(0,0,0,0.5); width: fit-content; min-width: 12vh;">
+            <div class="slide-instant-qr-card">
               <canvas id="qr-tv-peixaria" style="display: block; max-height: 10vh; max-width: 10vh;"></canvas>
-              <span style="color: #05060f; font-size: 1.1vh; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; text-align: center; white-space: nowrap;">Senha Rápida</span>
+              <span>Senha Rápida</span>
             </div>
           </div>
         </div>

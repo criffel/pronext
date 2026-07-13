@@ -1,5 +1,0 @@
-{
-  "CENTRAL_SERVER_BASE_URL": "http://localhost:3000",
-  "STORE_SLUG": "machado-tarumas",
-  "LISTEN_PORT": 9050
-}

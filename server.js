@@ -78,13 +78,19 @@ function loadData() {
   initQueues();
 }
 
+let saveTimeout = null;
 function saveData() {
-  try {
-    const data = { queues, globalHistory };
-    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
-  } catch (err) {
-    console.error('⚠️ Erro ao salvar data.json:', err);
-  }
+  if (saveTimeout) clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(() => {
+    try {
+      const data = { queues, globalHistory };
+      fs.writeFile(DATA_FILE, JSON.stringify(data, null, 2), 'utf8', (err) => {
+        if (err) console.error('⚠️ Erro ao salvar data.json:', err);
+      });
+    } catch (err) {
+      console.error('⚠️ Erro ao salvar data.json:', err);
+    }
+  }, 2000);
 }
 
 // Carrega os dados na inicialização
@@ -94,6 +100,16 @@ app.use(express.json());
 
 // Serve arquivos estáticos da pasta public
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Chave de autenticação para rotas administrativas
+const ADMIN_API_KEY = process.env.ADMIN_API_KEY || 'filapro-admin-2026';
+function requireAdminKey(req, res, next) {
+  const key = req.headers['x-api-key'] || req.query.apikey;
+  if (key !== ADMIN_API_KEY) {
+    return res.status(401).json({ error: 'Chave de autenticação inválida.' });
+  }
+  next();
+}
 
 // Rota de Landing Page (Seletor central de filiais)
 app.get('/', (req, res) => {
@@ -144,7 +160,7 @@ app.get('/api/toledo/relay-config', (req, res) => {
 });
 
 // API para atualizar as configurações de balanças Toledo
-app.post('/api/toledo/config', (req, res) => {
+app.post('/api/toledo/config', requireAdminKey, (req, res) => {
   const configPath = path.join(__dirname, 'toledo-config.json');
   try {
     const { mappings } = req.body;
@@ -190,6 +206,7 @@ app.post('/api/toledo/call', (req, res) => {
         socketId: null,
         createdAt: Date.now()
       };
+      queue.lastNumber = Math.max(queue.lastNumber, ticketNum);
     }
   } else {
     // Chamada padrão de próximo se não houver número
@@ -320,6 +337,9 @@ app.get('/api/config', (req, res) => {
 io.on('connection', (socket) => {
   console.log(`Novo dispositivo conectado via WebSockets: ${socket.id}`);
 
+  // Rastreamento de socket → ticket para limpeza no disconnect
+  const socketMeta = { loja: null, sector: null, ticketNumber: null };
+
   // Registro de TV em sala específica da filial
   socket.on('register_tv', (data) => {
     const { loja } = data || {};
@@ -433,6 +453,9 @@ io.on('connection', (socket) => {
     // Atualiza atendentes e TV daquela loja
     broadcastQueueUpdates(storeSlug, sector);
     console.log(`Cliente registrado: Senha ${ticket.formatted} na loja ${storeSlug}, setor ${sector}`);
+    socketMeta.loja = storeSlug;
+    socketMeta.sector = sector;
+    socketMeta.ticketNumber = ticket.number;
   });
 
   // Atendente chama o próximo cliente na loja
@@ -516,6 +539,7 @@ io.on('connection', (socket) => {
         socketId: null,
         createdAt: Date.now()
       };
+      queue.lastNumber = Math.max(queue.lastNumber, ticketNum);
     }
 
     ticket.status = 'called';
@@ -566,6 +590,18 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     console.log(`Dispositivo desconectado: ${socket.id}`);
+    // Remove cliente desconectado da fila de espera
+    if (socketMeta.loja && socketMeta.sector && socketMeta.ticketNumber !== null) {
+      const q = queues[socketMeta.loja]?.[socketMeta.sector];
+      if (q) {
+        const idx = q.waiting.findIndex(t => t.number === socketMeta.ticketNumber);
+        if (idx !== -1) {
+          q.waiting.splice(idx, 1);
+          console.log(`🧹 Senha ${socketMeta.ticketNumber} removida da fila (cliente desconectou).`);
+          broadcastQueueUpdates(socketMeta.loja, socketMeta.sector);
+        }
+      }
+    }
   });
 });
 

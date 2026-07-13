@@ -8,3 +8,9 @@ package-lock.json
 scale_debug.log
 __pycache__/
 data.json
+build/
+dist/
+relay-settings.json
+toledo_relay.spec
+*.pyc
+*.exe

@@ -15,7 +15,7 @@ let soundEnabled = true;
 let callTimeout  = null;
 let currentSlideIndex = 0;
 let slideInterval = null;
-let progressAnimation = null;
+
 let queuesStatusGlobal = {};
 
 const SLIDE_DURATION = 7000; // ms por slide
@@ -56,7 +56,6 @@ function goToSlide(index) {
 }
 
 function startProgressBar() {
-  if (progressAnimation) cancelAnimationFrame(progressAnimation);
   elProgressBar.style.transition = 'none';
   elProgressBar.style.width = '0%';
 
@@ -77,7 +76,6 @@ function startSlideshow() {
 function pauseSlideshow() {
   if (slideInterval) clearInterval(slideInterval);
   slideInterval = null;
-  if (progressAnimation) cancelAnimationFrame(progressAnimation);
   elProgressBar.style.transition = 'none';
   elProgressBar.style.width = '0%';
 }
@@ -160,10 +158,6 @@ fetch('/api/config')
   });
 
 // ─── Socket.io ───────────────────────────────────────────
-socket.on('connect', () => {
-  console.log(`TV conectada. Filial: ${storeSlug}`);
-  socket.emit('register_tv', { loja: storeSlug });
-});
 
 socket.on('initial_state', ({ globalHistory, queuesStatus }) => {
   renderHistory(globalHistory);
@@ -190,6 +184,27 @@ socket.on('play_call', ({ ticket, isRecall, globalHistory }) => {
   if (soundEnabled) {
     playChime();
     setTimeout(() => speakTicket(ticket), 1200);
+  }
+});
+
+socket.on('disconnect', () => {
+  console.warn('TV desconectada do servidor!');
+  const dot = document.querySelector('.topbar-dot');
+  if (dot) {
+    dot.style.background = '#ef4444';
+    dot.style.boxShadow = '0 0 8px #ef4444';
+    dot.title = 'Desconectado';
+  }
+});
+
+socket.on('connect', () => {
+  console.log(`TV conectada. Filial: ${storeSlug}`);
+  socket.emit('register_tv', { loja: storeSlug });
+  const dot = document.querySelector('.topbar-dot');
+  if (dot) {
+    dot.style.background = '#22c55e';
+    dot.style.boxShadow = '0 0 8px #22c55e';
+    dot.title = 'Conectado';
   }
 });
 
@@ -314,9 +329,20 @@ function renderWaitingList() {
 }
 
 // ─── Áudio ───────────────────────────────────────────────
+let globalAudioCtx = null;
+function getAudioContext() {
+  if (!globalAudioCtx || globalAudioCtx.state === 'closed') {
+    globalAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (globalAudioCtx.state === 'suspended') {
+    globalAudioCtx.resume();
+  }
+  return globalAudioCtx;
+}
+
 function playChime() {
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = getAudioContext();
     const now = ctx.currentTime;
     const notes = [659.25, 783.99, 1046.50];
     const timings = [0, 0.18, 0.36];
