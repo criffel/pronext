@@ -183,7 +183,7 @@ socket.on('play_call', ({ ticket, isRecall, globalHistory }) => {
 
   if (soundEnabled) {
     playChime();
-    setTimeout(() => speakTicket(ticket), 1200);
+    setTimeout(() => playSpeech(ticket), 1000);
   }
 });
 
@@ -377,25 +377,20 @@ if (typeof window !== 'undefined' && window.speechSynthesis) {
   loadVoices();
 }
 
-function speakTicket(ticket) {
+function playSpeech(ticket) {
   try {
-    const letters = ticket.formatted.match(/[A-Za-z]+/)[0];
-    const numbers = ticket.formatted.match(/\d+/)[0];
+    const lettersMatch = ticket.formatted.match(/[A-Za-z]+/);
+    const numbersMatch = ticket.formatted.match(/\d+/);
     
-    // Mapeamento explícito para forçar a pronúncia correta de cada número em português
-    const digitNames = {
-      '0': 'zero', '1': 'um', '2': 'dois', '3': 'três', '4': 'quatro',
-      '5': 'cinco', '6': 'seis', '7': 'sete', '8': 'oito', '9': 'nove'
-    };
+    const letters = lettersMatch ? lettersMatch[0].split('').join(' ') : '';
+    const numbers = numbersMatch ? parseInt(numbersMatch[0], 10) : '';
     
-    const spelledNumbers = numbers.split('').map(d => digitNames[d] || d).join(' ');
-    const spelledLetters = letters.split('').join(' ');
-    const text = `Senha ${spelledLetters}, ${spelledNumbers}, ${ticket.sectorName}.`;
+    const text = `Senha, ${letters}, ${numbers}, dirija-se ao, ${ticket.sectorName}`;
 
     window.speechSynthesis.cancel();
     const utt = new SpeechSynthesisUtterance(text);
     utt.lang = 'pt-BR';
-    utt.rate = 0.85;
+    utt.rate = 0.9;
     
     if (ptVoice) {
       utt.voice = ptVoice;

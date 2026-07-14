@@ -189,14 +189,29 @@ document.getElementById('btn-new-ticket').addEventListener('click', () => {
   window.location.reload();
 });
 
-// Atualiza o texto do contador de pessoas à frente
+// Atualiza contador de pessoas na frente e ETA
 function updateWaitingCount(position) {
-  if (position === 0) {
-    elWaitingAhead.textContent = 'Você é o PRÓXIMO!';
-    elWaitingAhead.style.color = '#38bdf8';
+  if (position !== null) {
+    const elDisplayWaiting = document.getElementById('waiting-ahead');
+    if(elDisplayWaiting) elDisplayWaiting.textContent = position;
+    
+    // Cálculo simples: 2 minutos por pessoa (ajustável)
+    const etaMinutes = position * 2;
+    const elEta = document.getElementById('display-eta');
+    if (elEta) {
+      if (position === 0) {
+        elEta.textContent = "Você é o próximo!";
+        elEta.style.color = 'var(--color-success)';
+      } else {
+        elEta.textContent = `Tempo estimado: ~${etaMinutes} min`;
+        elEta.style.color = '#38bdf8';
+      }
+    }
   } else {
-    elWaitingAhead.textContent = `${position} pessoa${position > 1 ? 's' : ''}`;
-    elWaitingAhead.style.color = 'var(--text-primary)';
+    const elDisplayWaiting = document.getElementById('waiting-ahead');
+    if(elDisplayWaiting) elDisplayWaiting.textContent = '0';
+    const elEta = document.getElementById('display-eta');
+    if (elEta) elEta.textContent = 'Tempo estimado: -- min';
   }
 }
 

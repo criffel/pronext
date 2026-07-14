@@ -1,0 +1,22 @@
+{
+  "name": "FilaPro - Sua Fila Inteligente",
+  "short_name": "FilaPro",
+  "description": "Acompanhe sua senha do supermercado em tempo real.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/images/paodequeijo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/images/paodequeijo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

@@ -5,6 +5,7 @@ const panelSetup = document.getElementById('panel-setup');
 const formSetup = document.getElementById('form-setup');
 const selectSector = document.getElementById('select-sector');
 const inputGuiche = document.getElementById('input-guiche');
+const inputPin = document.getElementById('input-pin');
 
 // Elementos do Painel do Atendente
 const panelDashboard = document.getElementById('panel-dashboard');
@@ -60,9 +61,14 @@ formSetup.addEventListener('submit', (e) => {
   
   currentSector = selectSector.value;
   const currentGuiche = inputGuiche.value.trim();
+  const currentPin = inputPin.value.trim();
   
   if (!currentSector) {
     alert('Por favor, selecione um setor.');
+    return;
+  }
+  if (!currentPin) {
+    alert('Por favor, digite o PIN de Acesso.');
     return;
   }
   
@@ -90,8 +96,18 @@ formSetup.addEventListener('submit', (e) => {
   // Aplica classe de cor do setor no container do painel
   panelDashboard.classList.add(currentSector);
   
-  // Registra atendente no Socket especificando a filial, setor e guichê
-  socket.emit('register_attendant', { loja: storeSlug, sector: currentSector, guiche: currentGuiche });
+  // Registra atendente no Socket especificando a filial, setor, guichê e PIN
+  socket.emit('register_attendant', { loja: storeSlug, sector: currentSector, guiche: currentGuiche, pin: currentPin });
+});
+
+// Listener para erro de autenticação (PIN inválido)
+socket.on('auth_error', (msg) => {
+  alert(msg);
+  // Reverte a interface
+  panelSetup.style.display = 'block';
+  panelDashboard.style.display = 'none';
+  panelDashboard.classList.remove(currentSector);
+  inputPin.value = ''; // Limpa o PIN incorreto
 });
 
 // Recebe atualizações da fila de espera do setor

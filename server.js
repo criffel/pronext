@@ -6,6 +6,7 @@ const os = require('os');
 const fs = require('fs');
 const webpush = require('web-push');
 const { initToledoListener } = require('./toledo-listener');
+const db = require('./db');
 
 const app = express();
 const server = http.createServer(app);
@@ -46,7 +47,6 @@ const SECTORS = {
 };
 
 // Inicialização do estado das filas e histórico por filial em memória
-const DATA_FILE = path.join(__dirname, 'data.json');
 let queues = {};
 let globalHistory = {};
 
@@ -64,40 +64,18 @@ function initQueues() {
   }
 }
 
-function loadData() {
-  if (fs.existsSync(DATA_FILE)) {
-    try {
-      const data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-      if (data.queues && data.globalHistory) {
-        queues = data.queues;
-        globalHistory = data.globalHistory;
-        console.log('📦 Dados das filas carregados do disco com sucesso.');
-        return;
-      }
-    } catch (err) {
-      console.error('⚠️ Erro ao carregar data.json. Iniciando com filas vazias.', err);
-    }
-  }
-  initQueues();
-}
-
 let saveTimeout = null;
 function saveData() {
   if (saveTimeout) clearTimeout(saveTimeout);
   saveTimeout = setTimeout(() => {
     try {
-      const data = { queues, globalHistory };
-      fs.writeFile(DATA_FILE, JSON.stringify(data, null, 2), 'utf8', (err) => {
-        if (err) console.error('⚠️ Erro ao salvar data.json:', err);
-      });
+      db.saveState('queues', queues);
+      db.saveState('globalHistory', globalHistory);
     } catch (err) {
-      console.error('⚠️ Erro ao salvar data.json:', err);
+      console.error('⚠️ Erro ao salvar banco de dados:', err);
     }
   }, 2000);
 }
-
-// Carrega os dados na inicialização
-loadData();
 
 app.use(express.json());
 
@@ -106,6 +84,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Chave de autenticação para rotas administrativas
 const ADMIN_API_KEY = process.env.ADMIN_API_KEY || 'filapro-admin-2026';
+const ATTENDANT_PIN = process.env.ATTENDANT_PIN || '1234';
 function requireAdminKey(req, res, next) {
   const key = req.headers['x-api-key'] || req.query.apikey;
   if (key !== ADMIN_API_KEY) {
@@ -177,6 +156,21 @@ app.post('/api/toledo/config', requireAdminKey, (req, res) => {
   } catch (err) {
     console.error('Erro ao salvar toledo-config.json:', err);
     res.status(500).json({ error: 'Erro ao gravar as configurações de balanças.' });
+  }
+});
+
+// API de Estatísticas para o Dashboard
+app.get('/api/stats', requireAdminKey, async (req, res) => {
+  try {
+    const store = req.query.store;
+    if (!store) {
+      return res.status(400).json({ error: 'Parâmetro store é obrigatório.' });
+    }
+    const stats = await db.getStats(store);
+    res.json(stats);
+  } catch (err) {
+    console.error('Erro ao obter estatísticas:', err);
+    res.status(500).json({ error: 'Erro ao buscar estatísticas.' });
   }
 });
 
@@ -359,7 +353,13 @@ io.on('connection', (socket) => {
 
   // Registro de Atendente na filial e setor
   socket.on('register_attendant', (data) => {
-    const { loja, sector } = data || {};
+    const { loja, sector, pin } = data || {};
+    
+    if (pin !== ATTENDANT_PIN) {
+      socket.emit('auth_error', 'PIN incorreto. Acesso negado.');
+      return;
+    }
+
     const storeSlug = loja ? loja.toLowerCase() : '';
     if (STORES[storeSlug] && SECTORS[sector]) {
       socket.join(`${storeSlug}:attendants:${sector}`);
@@ -691,15 +691,29 @@ function triggerCall(loja, ticket, isRecall = false) {
   }
 
   // 4. Atualiza filas
+  db.registerCall(loja, ticket.sector, ticket.number, ticket.guiche, ticket.calledAt);
   broadcastQueueUpdates(loja, ticket.sector);
 }
 
-// Inicializa escuta de balanças Toledo
-initToledoListener(io, queues, globalHistory, STORES, SECTORS, triggerCall, broadcastQueueUpdates);
+db.initDB().then(async () => {
+  const q = await db.loadState('queues');
+  const h = await db.loadState('globalHistory');
+  if (q && h) {
+    queues = q;
+    globalHistory = h;
+  } else {
+    initQueues();
+  }
+  
+  // Inicializa escuta de balanças Toledo
+  initToledoListener(io, queues, globalHistory, STORES, SECTORS, triggerCall, broadcastQueueUpdates);
 
-server.listen(PORT, () => {
-  console.log('=================================================');
-  console.log(`Servidor FilaPro Multi-Loja rodando na porta ${PORT}`);
-  console.log(`Acesse http://localhost:${PORT} para iniciar`);
-  console.log('=================================================');
+  server.listen(PORT, () => {
+    console.log('=================================================');
+    console.log(`Servidor FilaPro Multi-Loja rodando na porta ${PORT}`);
+    console.log(`Acesse http://localhost:${PORT} para iniciar`);
+    console.log('=================================================');
+  });
+}).catch(err => {
+  console.error("Erro fatal ao inicializar banco de dados:", err);
 });
