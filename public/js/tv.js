@@ -17,10 +17,37 @@ let currentSlideIndex = 0;
 let slideInterval = null;
 
 let queuesStatusGlobal = {};
+const pathParts = window.location.pathname.split('/');
+const storeSlug = pathParts[2] || '';
+const tvSectorSlug = pathParts[3] || null;
 
 const SLIDE_DURATION = 7000; // ms por slide
-const slides = document.querySelectorAll('.mk-slide');
-const dots   = document.querySelectorAll('.slide-dot');
+let slides = Array.from(document.querySelectorAll('.mk-slide'));
+let dots   = Array.from(document.querySelectorAll('.slide-dot'));
+
+if (tvSectorSlug) {
+  // Filtra slides mantendo apenas o geral e o do setor
+  slides.forEach(slide => {
+    if (!slide.classList.contains('general') && !slide.classList.contains(tvSectorSlug)) {
+      slide.remove();
+    }
+  });
+  // Recarrega slides do DOM
+  slides = Array.from(document.querySelectorAll('.mk-slide'));
+  
+  // Remove dots extras
+  const dotsContainer = document.getElementById('slide-dots');
+  if (dotsContainer) {
+    dotsContainer.innerHTML = '';
+    slides.forEach((_, i) => {
+      const d = document.createElement('div');
+      d.className = 'slide-dot';
+      if (i === 0) d.classList.add('active');
+      dotsContainer.appendChild(d);
+    });
+    dots = Array.from(document.querySelectorAll('.slide-dot'));
+  }
+}
 
 // ─── Relógio em Tempo Real ───────────────────────────────
 function updateClock() {
@@ -120,9 +147,7 @@ function drawFallbackText(canvas, value) {
   ctx.fillText(value.replace('http://', '').slice(0, 30), 130, 130);
 }
 
-// ─── Rota e Configuração ─────────────────────────────────
-const pathParts = window.location.pathname.split('/');
-const storeSlug = pathParts[2] || '';
+// ─── Configuração Inicial ─────────────────────────────────
 
 fetch('/api/config')
   .then(res => res.json())
@@ -160,20 +185,42 @@ fetch('/api/config')
 // ─── Socket.io ───────────────────────────────────────────
 
 socket.on('initial_state', ({ globalHistory, queuesStatus }) => {
+  if (tvSectorSlug) {
+    globalHistory = globalHistory.filter(h => h.sector === tvSectorSlug);
+  }
   renderHistory(globalHistory);
+  
   if (queuesStatus) {
-    queuesStatusGlobal = queuesStatus;
+    if (tvSectorSlug) {
+      const sectorStatus = {};
+      if (queuesStatus[tvSectorSlug]) sectorStatus[tvSectorSlug] = queuesStatus[tvSectorSlug];
+      queuesStatusGlobal = sectorStatus;
+    } else {
+      queuesStatusGlobal = queuesStatus;
+    }
     renderWaitingList();
   }
 });
 
 socket.on('queues_status_update', (queuesStatus) => {
-  queuesStatusGlobal = queuesStatus;
+  if (tvSectorSlug) {
+    const sectorStatus = {};
+    if (queuesStatus[tvSectorSlug]) sectorStatus[tvSectorSlug] = queuesStatus[tvSectorSlug];
+    queuesStatusGlobal = sectorStatus;
+  } else {
+    queuesStatusGlobal = queuesStatus;
+  }
   renderWaitingList();
 });
 
 socket.on('play_call', ({ ticket, isRecall, globalHistory }) => {
+  if (tvSectorSlug && ticket.sector !== tvSectorSlug) return;
+
   showCall(ticket);
+  
+  if (tvSectorSlug) {
+    globalHistory = globalHistory.filter(h => h.sector === tvSectorSlug);
+  }
   renderHistory(globalHistory);
 
   // Flash visual

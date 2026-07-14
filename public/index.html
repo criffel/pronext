@@ -278,9 +278,14 @@
           <div class="qr-placeholder">
             <canvas id="qr-${sectorKey}"></canvas>
           </div>
-          <a href="/cliente/${storeSlug}/${sectorKey}" target="_blank" class="btn btn-primary" style="background: ${grad};">
-            <i class="fa-solid fa-mobile-screen-button"></i> Simular Cliente
-          </a>
+          <div style="display: flex; flex-direction: column; gap: 0.5rem; width: 100%;">
+            <a href="/cliente/${storeSlug}/${sectorKey}" target="_blank" class="btn btn-primary" style="background: ${grad}; padding: 0.75rem; font-size: 0.9rem;">
+              <i class="fa-solid fa-mobile-screen-button"></i> Simular Cliente
+            </a>
+            <a href="/tv/${storeSlug}/${sectorKey}" target="_blank" class="btn btn-primary" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); padding: 0.75rem; font-size: 0.9rem;">
+              <i class="fa-solid fa-tv"></i> Abrir TV do Setor
+            </a>
+          </div>
         `;
         grid.appendChild(card);
 

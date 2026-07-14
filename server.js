@@ -271,15 +271,23 @@ app.get('/retirar/:loja', (req, res) => {
   }
 });
 
-// Rota dinâmica para TV de uma filial específica
-app.get('/tv/:loja', (req, res) => {
-  const { loja } = req.params;
+// Rota dinâmica para TV de uma filial (com suporte opcional a setor específico)
+app.get('/tv/:loja/:setor?', (req, res) => {
+  const { loja, setor } = req.params;
   const storeSlug = loja.toLowerCase();
-  if (STORES[storeSlug]) {
-    res.sendFile(path.join(__dirname, 'public', 'tv.html'));
-  } else {
-    res.status(404).send('Filial inválida na URL da TV.');
+  
+  if (!STORES[storeSlug]) {
+    return res.status(404).send('Filial inválida na URL da TV.');
   }
+
+  if (setor) {
+    const sectorSlug = setor.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    if (!SECTORS[sectorSlug]) {
+      return res.status(404).send('Setor inválido na URL da TV.');
+    }
+  }
+
+  res.sendFile(path.join(__dirname, 'public', 'tv.html'));
 });
 
 // Rota dinâmica para Atendente de uma filial específica
