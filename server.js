@@ -5,6 +5,7 @@ const path = require('path');
 const os = require('os');
 const fs = require('fs');
 const webpush = require('web-push');
+const jwtAuth = require('./src/auth/jwt');
 const { initToledoListener } = require('./toledo-listener');
 const db = require('./db');
 
@@ -24,18 +25,16 @@ webpush.setVapidDetails(
   VAPID_PRIVATE_KEY
 );
 
-// Lista real de lojas do grupo
-const STORES = {
-  'super-atacado-primaveras': { name: 'Super Atacado Primaveras', prefix: 'SAP' },
-  'machado-tarumas': { name: 'Machado Tarumãs', prefix: 'MT' },
-  'machado-itaubas': { name: 'Machado Itaúbas', prefix: 'MI' },
-  'machado-jardim-primaveras': { name: 'Machado Jardim Primaveras', prefix: 'MJP' },
-  'machado-aeroporto': { name: 'Machado Aeroporto', prefix: 'MA' },
-  'machado-tancredo-neves': { name: 'Machado Tancredo Neves', prefix: 'MTN' },
-  'super-atacado-vitoria-regia': { name: 'Super Atacado Vitória Régia', prefix: 'SAV' },
-  'super-atacado-supercenter': { name: 'Super Atacado Supercenter', prefix: 'SSC' },
-  'super-atacado-br-163': { name: 'Super Atacado BR 163', prefix: 'SBR' }
-};
+// Lista de lojas do grupo será carregada do banco de dados
+let STORES = {};
+
+async function loadStoresFromDB() {
+  const dbStores = await db.getAllStores();
+  STORES = {};
+  dbStores.forEach(s => {
+    STORES[s.id] = { name: s.name, prefix: 'L' + s.id };
+  });
+}
 
 // Lista real de setores customizados
 const SECTORS = {
@@ -84,14 +83,75 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Chave de autenticação para rotas administrativas
 const ADMIN_API_KEY = process.env.ADMIN_API_KEY || 'filapro-admin-2026';
-const ATTENDANT_PIN = process.env.ATTENDANT_PIN || '2021';
 function requireAdminKey(req, res, next) {
   const key = req.headers['x-api-key'] || req.query.apikey;
-  if (key !== ADMIN_API_KEY) {
-    return res.status(401).json({ error: 'Chave de autenticação inválida.' });
+  if (key === ADMIN_API_KEY) {
+    return next();
   }
-  next();
+  return jwtAuth.requireAuth(req, res, next);
 }
+
+// ─── API DE AUTENTICAÇÃO (JWT) ───────────────
+app.post('/api/login', async (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) return res.status(400).json({ error: 'Usuário e senha são obrigatórios' });
+
+  const user = await db.getUser(username);
+  if (!user) return res.status(401).json({ error: 'Credenciais inválidas' });
+
+  const bcrypt = require('bcryptjs');
+  const valid = await bcrypt.compare(password, user.password_hash);
+  if (!valid) return res.status(401).json({ error: 'Credenciais inválidas' });
+
+  const token = jwtAuth.generateToken(user);
+  res.json({ token, role: user.role, username: user.username });
+});
+
+// ─── API DE MÍDIA DA TV ───────────────
+app.get('/api/media', async (req, res) => {
+  const { store } = req.query;
+  if (!store) return res.status(400).json({ error: 'Loja não informada' });
+  const media = await db.getAllMedia(store);
+  res.json(media);
+});
+
+app.post('/api/media', jwtAuth.requireAuth, async (req, res) => {
+  const { store, media_url, media_type, duration } = req.body;
+  await db.addMedia(store, media_url, media_type, duration);
+  res.json({ success: true });
+});
+
+app.delete('/api/media/:id', jwtAuth.requireAuth, async (req, res) => {
+  await db.removeMedia(req.params.id);
+  res.json({ success: true });
+});
+
+// ─── API DE FILIAIS (STORES) ───────────────
+app.get('/api/stores', async (req, res) => {
+  res.json(Object.keys(STORES).map(id => ({ id, name: STORES[id].name })));
+});
+
+app.post('/api/stores', jwtAuth.requireAuth, async (req, res) => {
+  const { id, name } = req.body;
+  if (!id || !name) return res.status(400).json({ error: 'ID e Nome são obrigatórios.' });
+  await db.addStore(id, name);
+  await loadStoresFromDB(); // Recarrega
+  // Inicializa fila se não existir
+  if (!queues[id]) {
+    queues[id] = {};
+    globalHistory[id] = [];
+    for (const sectorSlug in SECTORS) {
+      queues[id][sectorSlug] = { lastNumber: 0, waiting: [], called: [] };
+    }
+  }
+  res.json({ success: true });
+});
+
+app.delete('/api/stores/:id', jwtAuth.requireAuth, async (req, res) => {
+  await db.removeStore(req.params.id);
+  await loadStoresFromDB();
+  res.json({ success: true });
+});
 
 // Rota de Landing Page (Seletor central de filiais)
 app.get('/', (req, res) => {
@@ -247,31 +307,44 @@ app.get('/api/toledo/download-relay', (req, res) => {
   }
 });
 
-// Rota dinâmica para Clientes de uma filial e setor
-app.get('/cliente/:loja/:setor', (req, res) => {
+// Rota super-curta para Autoatendimento do Cliente de uma filial específica
+// Substitui a antiga '/cliente/:loja/:setor'
+app.get('/:loja/:setor', (req, res, next) => {
   const { loja, setor } = req.params;
   const storeSlug = loja.toLowerCase();
-  const sectorSlug = setor.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const sectorSlug = setor.toLowerCase();
   
   if (STORES[storeSlug] && SECTORS[sectorSlug]) {
     res.sendFile(path.join(__dirname, 'public', 'cliente.html'));
   } else {
-    res.status(404).send('Filial ou Setor inválido. Verifique os parâmetros da URL.');
+    // Se não for filial válida, passa para a próxima rota (evita conflito)
+    next();
   }
 });
 
-// Rota dinâmica para Autoatendimento do Cliente de uma filial específica
-app.get('/retirar/:loja', (req, res) => {
+// Antiga rota de autoatendimento mantida para retrocompatibilidade
+app.get('/cliente/:loja/:setor', (req, res) => {
+  res.redirect(`/${req.params.loja}/${req.params.setor}`);
+});
+
+// Rota dinâmica para o Totem de Autoatendimento de uma filial
+app.get('/totem/:loja', (req, res) => {
   const { loja } = req.params;
   const storeSlug = loja.toLowerCase();
+  
   if (STORES[storeSlug]) {
-    res.sendFile(path.join(__dirname, 'public', 'retirar.html'));
+    res.sendFile(path.join(__dirname, 'public', 'totem.html'));
   } else {
-    res.status(404).send('Filial inválida na URL de autoatendimento.');
+    res.status(404).send('Filial inválida. Verifique o parâmetro da URL.');
   }
 });
 
-// Rota dinâmica para TV de uma filial (com suporte opcional a setor específico)
+// Redirecionamento da antiga /retirar/:loja para /totem/:loja 
+app.get('/retirar/:loja', (req, res) => {
+  res.redirect(`/totem/${req.params.loja}`);
+});
+
+// Rota de TV (Visualização Pública) - permite abrir sem setor específico)
 app.get('/tv/:loja/:setor?', (req, res) => {
   const { loja, setor } = req.params;
   const storeSlug = loja.toLowerCase();
@@ -288,6 +361,16 @@ app.get('/tv/:loja/:setor?', (req, res) => {
   }
 
   res.sendFile(path.join(__dirname, 'public', 'tv.html'));
+});
+
+// Rota de Totem Físico
+app.get('/totem/:loja', (req, res) => {
+  const { loja } = req.params;
+  if (STORES[loja.toLowerCase()]) {
+    res.sendFile(path.join(__dirname, 'public', 'totem.html'));
+  } else {
+    res.status(404).send('Filial inválida na URL do Totem.');
+  }
 });
 
 // Rota dinâmica para Atendente de uma filial específica
@@ -417,55 +500,55 @@ io.on('connection', (socket) => {
               number: ticketNum,
               formatted,
               loja: storeSlug,
-              sector,
-              sectorName: SECTORS[sector].name,
+              sector: sectorSlug,
+              sectorName: SECTORS[sectorSlug].name,
               socketId: socket.id,
               createdAt: Date.now(),
               status: 'waiting',
-              subscription: subscription || null
+              subscription: subscription || null,
+              whatsapp: whatsapp || null,
+              whatsappAlertSent: false
             };
-            queues[storeSlug][sector].waiting.push(ticket);
-            queues[storeSlug][sector].waiting.sort((a, b) => a.number - b.number);
+            queues[storeSlug][sectorSlug].waiting.push(ticket);
+            queues[storeSlug][sectorSlug].waiting.sort((a, b) => a.number - b.number);
           }
         }
       }
     }
 
-    // Cria nova senha se não houver antiga ativa
     if (!ticket) {
-      queues[storeSlug][sector].lastNumber += 1;
-      const ticketNum = queues[storeSlug][sector].lastNumber;
-      const formatted = `${SECTORS[sector].prefix}${String(ticketNum).padStart(3, '0')}`;
+      queues[storeSlug][sectorSlug].lastNumber += 1;
+      const ticketNum = queues[storeSlug][sectorSlug].lastNumber;
+      const formatted = `${SECTORS[sectorSlug].prefix}${String(ticketNum).padStart(3, '0')}`;
 
       ticket = {
         number: ticketNum,
         formatted,
         loja: storeSlug,
-        sector,
-        sectorName: SECTORS[sector].name,
+        sector: sectorSlug,
+        sectorName: SECTORS[sectorSlug].name,
         socketId: socket.id,
         createdAt: Date.now(),
         status: 'waiting',
-        subscription: subscription || null
+        subscription: subscription || null,
+        whatsapp: whatsapp || null,
+        whatsappAlertSent: false
       };
 
-      queues[storeSlug][sector].waiting.push(ticket);
+      queues[storeSlug][sectorSlug].waiting.push(ticket);
     }
 
-    // Junta-se ao canal privado da senha nesta loja
     socket.join(`${storeSlug}:ticket:${ticket.formatted}`);
 
-    // Confirma ticket
     socket.emit('ticket_assigned', {
       ticket,
-      position: getPositionInQueue(storeSlug, sector, ticket.number)
+      position: getPositionInQueue(storeSlug, sectorSlug, ticket.number)
     });
 
-    // Atualiza atendentes e TV daquela loja
-    broadcastQueueUpdates(storeSlug, sector);
-    console.log(`Cliente registrado: Senha ${ticket.formatted} na loja ${storeSlug}, setor ${sector}`);
+    broadcastQueueUpdates(storeSlug, sectorSlug);
+    console.log(`Cliente registrado: Senha ${ticket.formatted} na loja ${storeSlug}, setor ${sectorSlug}`);
     socketMeta.loja = storeSlug;
-    socketMeta.sector = sector;
+    socketMeta.sector = sectorSlug;
     socketMeta.ticketNumber = ticket.number;
   });
 
@@ -487,7 +570,6 @@ io.on('connection', (socket) => {
 
     queue.called.push(ticket);
 
-    // Adiciona ao histórico daquela loja
     globalHistory[storeSlug].unshift({
       formatted: ticket.formatted,
       sector: ticket.sector,
@@ -584,7 +666,6 @@ io.on('connection', (socket) => {
       queues[storeSlug][sector].waiting = [];
       queues[storeSlug][sector].called = [];
 
-      // Filtra histórico daquela loja
       globalHistory[storeSlug] = globalHistory[storeSlug].filter(h => h.sector !== sector);
 
       saveData();
@@ -601,7 +682,6 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     console.log(`Dispositivo desconectado: ${socket.id}`);
-    // Remove cliente desconectado da fila de espera
     if (socketMeta.loja && socketMeta.sector && socketMeta.ticketNumber !== null) {
       const q = queues[socketMeta.loja]?.[socketMeta.sector];
       if (q) {
@@ -643,7 +723,22 @@ function getPositionInQueue(loja, sector, ticketNumber) {
   return index === -1 ? 0 : index;
 }
 
+function checkWhatsAppAlerts(storeSlug, sectorSlug) {
+  const q = queues[storeSlug]?.[sectorSlug];
+  if (!q || !q.waiting.length) return;
+
+  // A pessoa na posição 2 (índice 1, ou seja, faltam 1 pessoa na frente dela)
+  // ou na posição 3 (índice 2, faltam 2 pessoas) pode receber o alerta
+  q.waiting.forEach((ticket, index) => {
+    if (ticket.whatsapp && !ticket.whatsappAlertSent && index <= 2 && index > 0) {
+      ticket.whatsappAlertSent = true;
+      whatsappService.sendApproachingAlert(ticket.whatsapp, ticket, index);
+    }
+  });
+}
+
 function broadcastQueueUpdates(loja, sector) {
+  checkWhatsAppAlerts(loja, sector);
   // Atualiza atendentes da loja no setor
   io.to(`${loja}:attendants:${sector}`).emit('queue_update', getQueueDetails(loja, sector));
   
@@ -704,11 +799,23 @@ function triggerCall(loja, ticket, isRecall = false) {
 }
 
 db.initDB().then(async () => {
+  await loadStoresFromDB();
   const q = await db.loadState('queues');
   const h = await db.loadState('globalHistory');
   if (q && h) {
     queues = q;
     globalHistory = h;
+    
+    // Verifica se há filiais novas no BD que não estavam no State
+    for (const storeId in STORES) {
+      if (!queues[storeId]) {
+        queues[storeId] = {};
+        globalHistory[storeId] = [];
+        for (const sectorSlug in SECTORS) {
+          queues[storeId][sectorSlug] = { lastNumber: 0, waiting: [], called: [] };
+        }
+      }
+    }
   } else {
     initQueues();
   }

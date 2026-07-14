@@ -39,10 +39,21 @@ if (cachedTicket) {
   }
 }
 
-// Ao conectar, registra o cliente no servidor
+// Variável para armazenar o WhatsApp temporariamente
+let userWhatsapp = '';
+
+// Ao conectar, registra o cliente no servidor ou mostra o form
 socket.on('connect', () => {
   console.log('Conectado ao servidor.');
-  sendRegistration();
+  
+  if (existingTicket) {
+    // Se já tem ticket, mostra o main-card e registra
+    document.getElementById('main-card').style.display = 'block';
+    sendRegistration();
+  } else {
+    // Se não tem ticket, mostra o setup-card para pedir WhatsApp
+    document.getElementById('setup-card').style.display = 'block';
+  }
   
   // Ativa Wake Lock para manter a tela ligada se suportado
   requestWakeLock();
@@ -54,9 +65,22 @@ function sendRegistration() {
     loja: storeSlug,
     sector: sector,
     existingTicket: existingTicket,
-    subscription: pushSubscription
+    subscription: pushSubscription,
+    whatsapp: userWhatsapp
   });
 }
+
+// Lida com o form de setup
+document.getElementById('setup-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const inputWa = document.getElementById('input-whatsapp');
+  if (inputWa) {
+    userWhatsapp = inputWa.value.trim();
+  }
+  document.getElementById('setup-card').style.display = 'none';
+  document.getElementById('main-card').style.display = 'block';
+  sendRegistration();
+});
 
 // Helper para converter a chave pública VAPID do formato base64 para Uint8Array
 function urlBase64ToUint8Array(base64String) {

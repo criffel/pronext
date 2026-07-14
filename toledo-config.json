@@ -2,20 +2,10 @@
   "enabled": true,
   "port": 9050,
   "mappings": {
-    "192.168.103.190": {
+    "192.168.1.190": {
       "store": "machado-tarumas",
       "sector": "acougue",
       "guiche": "Balança 01"
-    },
-    "192.168.103.191": {
-      "store": "machado-tarumas",
-      "sector": "acougue",
-      "guiche": "Balança 02"
-    },
-    "127.0.0.1": {
-      "store": "machado-tarumas",
-      "sector": "acougue",
-      "guiche": "Balança de Teste"
     }
   }
 }

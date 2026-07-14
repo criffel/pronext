@@ -162,6 +162,38 @@ fetch('/api/config')
       if (elSlideTitle)  elSlideTitle.innerHTML = storeObj.name.replace(' ', '<br>');
     }
 
+    // Load dynamic media from DB
+    fetch(`/api/media?store=${storeSlug}`)
+      .then(res => res.json())
+      .then(mediaList => {
+        if (mediaList && mediaList.length > 0) {
+          const sliderArea = document.getElementById('tv-slider-area');
+          const dotsContainer = document.getElementById('slide-dots');
+          
+          mediaList.forEach((m, idx) => {
+            // Create slide
+            const slideDiv = document.createElement('div');
+            slideDiv.className = 'mk-slide dynamic-media';
+            if (m.media_type === 'image') {
+              slideDiv.innerHTML = `<img src="${m.media_url}" style="width: 100%; height: 100%; object-fit: cover;">`;
+            } else {
+              slideDiv.innerHTML = `<video src="${m.media_url}" autoplay loop muted style="width: 100%; height: 100%; object-fit: cover;"></video>`;
+            }
+            sliderArea.insertBefore(slideDiv, document.getElementById('slide-progress-bar'));
+            
+            // Create dot
+            const dotDiv = document.createElement('div');
+            dotDiv.className = 'slide-dot';
+            dotsContainer.appendChild(dotDiv);
+          });
+          
+          // Re-fetch slides and dots
+          slides = Array.from(document.querySelectorAll('.mk-slide'));
+          dots = Array.from(document.querySelectorAll('.slide-dot'));
+        }
+      })
+      .catch(err => console.error('Erro ao carregar mídia dinâmica', err));
+
     // QR Code Geral: leva para a página de autoatendimento para escolher setor
     const generalQrUrl = `${window.location.origin}/retirar/${storeSlug}`;
     generateQrOnCanvas('qr-tv-general', generalQrUrl);

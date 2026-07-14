@@ -80,8 +80,9 @@
     <!-- Auth Block -->
     <div id="auth-block" class="glass-card" style="width: 100%; max-width: 400px; margin: 2rem auto;">
       <h2 style="margin-bottom: 1rem;">Acesso Administrativo</h2>
-      <input type="password" id="input-apikey" placeholder="Chave de Administração (API Key)" style="width: 100%; padding: 0.75rem; margin-bottom: 1rem;">
-      <button id="btn-login" class="btn btn-primary" style="width: 100%;">Acessar Dashboard</button>
+      <input type="text" id="input-username" placeholder="Usuário" style="width: 100%; padding: 0.75rem; margin-bottom: 1rem;">
+      <input type="password" id="input-password" placeholder="Senha" style="width: 100%; padding: 0.75rem; margin-bottom: 1rem;">
+      <button id="btn-login" class="btn btn-primary" style="width: 100%;">Entrar</button>
     </div>
 
     <!-- Dashboard Content -->
@@ -106,6 +107,61 @@
           <h3><i class="fa-solid fa-clock"></i> Volume por Hora</h3>
           <canvas id="hourChart"></canvas>
         </div>
+      </div>
+
+      <!-- TV Media Manager -->
+      <div class="glass-card" style="margin-top: 2rem; width: 100%; text-align: left;">
+        <h2 style="margin-bottom: 1rem;"><i class="fa-solid fa-photo-film"></i> Gerenciador de Mídia da TV</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">Adicione imagens ou vídeos para passar no carrossel da TV desta loja.</p>
+        
+        <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+          <input type="text" id="media-url" placeholder="URL da Mídia (Ex: https://.../promo.jpg)" style="flex: 1; padding: 0.75rem;">
+          <select id="media-type" style="padding: 0.75rem; background: #111322; color: #fff; border: 1px solid var(--border-glass);">
+            <option value="image">Imagem</option>
+            <option value="video">Vídeo</option>
+          </select>
+          <input type="number" id="media-duration" placeholder="Duração (ms)" value="7000" style="width: 120px; padding: 0.75rem;">
+          <button id="btn-add-media" class="btn btn-primary">Adicionar Mídia</button>
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+          <thead>
+            <tr>
+              <th style="padding: 1rem; border-bottom: 1px solid var(--border-glass); text-align: left;">ID</th>
+              <th style="padding: 1rem; border-bottom: 1px solid var(--border-glass); text-align: left;">Tipo</th>
+              <th style="padding: 1rem; border-bottom: 1px solid var(--border-glass); text-align: left;">Preview / URL</th>
+              <th style="padding: 1rem; border-bottom: 1px solid var(--border-glass); text-align: right;">Ação</th>
+            </tr>
+          </thead>
+          <tbody id="media-list">
+            <!-- Injetado dinamicamente -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Store Manager -->
+      <div class="glass-card" style="margin-top: 2rem; width: 100%; text-align: left;">
+        <h2 style="margin-bottom: 1rem;"><i class="fa-solid fa-store"></i> Cadastro de Filiais (Lojas)</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">Adicione ou remova lojas numéricas no sistema. Lembre-se que IDs excluidos não poderão ser recuperados.</p>
+        
+        <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+          <input type="text" id="store-id" placeholder="Nº da Loja (ex: 01)" style="width: 150px; padding: 0.75rem;">
+          <input type="text" id="store-name" placeholder="Nome da Filial (ex: Machado Centro)" style="flex: 1; padding: 0.75rem;">
+          <button id="btn-add-store" class="btn btn-primary">Salvar Loja</button>
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+          <thead>
+            <tr>
+              <th style="padding: 1rem; border-bottom: 1px solid var(--border-glass); text-align: left;">Nº Loja</th>
+              <th style="padding: 1rem; border-bottom: 1px solid var(--border-glass); text-align: left;">Nome da Filial</th>
+              <th style="padding: 1rem; border-bottom: 1px solid var(--border-glass); text-align: right;">Ação</th>
+            </tr>
+          </thead>
+          <tbody id="store-list">
+            <!-- Injetado dinamicamente -->
+          </tbody>
+        </table>
       </div>
     </div>
   </main>

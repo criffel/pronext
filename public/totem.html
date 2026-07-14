@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Totem - Retirar Senha</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&family=Bebas+Neue&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Outfit', sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-primary);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      user-select: none;
+    }
+    
+    .totem-header {
+      padding: 3rem 2rem;
+      text-align: center;
+      background: rgba(15, 17, 26, 0.6);
+      backdrop-filter: blur(15px);
+      border-bottom: 1px solid var(--border-glass);
+      z-index: 10;
+    }
+    
+    .totem-header h1 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 5rem;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(135deg, #38bdf8, #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    .totem-header p {
+      color: var(--text-secondary);
+      font-size: 1.8rem;
+      font-weight: 500;
+    }
+    
+    .store-badge {
+      display: inline-block;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: #38bdf8;
+      padding: 0.5rem 1.5rem;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 1.2rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 1rem;
+    }
+
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      position: relative;
+    }
+
+    .sectors-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2rem;
+      width: 100%;
+      max-width: 1200px;
+    }
+
+    .sector-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+      border-radius: var(--border-radius-lg);
+      border: 1px solid var(--border-glass);
+      background: rgba(255, 255, 255, 0.03);
+      color: #fff;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
+      box-shadow: var(--shadow-neon);
+      backdrop-filter: blur(10px);
+    }
+    
+    .sector-btn::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 6px;
+      transition: transform 0.3s;
+    }
+    
+    .sector-btn:active {
+      transform: scale(0.95);
+    }
+
+    .sector-btn i.sector-icon {
+      font-size: 4.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .sector-btn span {
+      font-size: 2.2rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+
+    /* Cores dos Setores */
+    .sector-btn.acougue::before { background: var(--color-acougue); }
+    .sector-btn.acougue i.sector-icon { color: var(--color-acougue); }
+    
+    .sector-btn.padaria::before { background: var(--color-padaria); }
+    .sector-btn.padaria i.sector-icon { color: var(--color-padaria); }
+    
+    .sector-btn.rotisseria::before { background: var(--color-rotisseria); }
+    .sector-btn.rotisseria i.sector-icon { color: var(--color-rotisseria); }
+    
+    .sector-btn.frios::before { background: var(--color-frios); }
+    .sector-btn.frios i.sector-icon { color: var(--color-frios); }
+    
+    .sector-btn.peixaria::before { background: var(--color-peixaria); }
+    .sector-btn.peixaria i.sector-icon { color: var(--color-peixaria); }
+
+    /* Modal de Sucesso */
+    .success-modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(20px);
+      z-index: 9999;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2rem;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .success-modal-overlay.active {
+      display: flex;
+      opacity: 1;
+    }
+
+    .success-modal-content {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--border-radius-lg);
+      padding: 4rem;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      animation: popIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      max-width: 600px;
+      width: 100%;
+    }
+
+    @keyframes popIn {
+      0% { transform: scale(0.8); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .success-icon {
+      font-size: 6rem;
+      color: var(--color-success);
+      margin-bottom: 1.5rem;
+      animation: pulseSuccess 2s infinite;
+    }
+
+    @keyframes pulseSuccess {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+
+    .ticket-number-display {
+      font-size: 7rem;
+      font-weight: 900;
+      color: #fff;
+      letter-spacing: 0.05em;
+      margin: 1.5rem 0;
+      text-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+    }
+    
+    .ticket-sector-display {
+      font-size: 2rem;
+      color: var(--color-success);
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .success-instruction {
+      font-size: 1.4rem;
+      color: var(--text-secondary);
+      margin-top: 2rem;
+    }
+    
+    .loading-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--text-secondary);
+      font-size: 1.5rem;
+    }
+    
+    .spinner {
+      border: 4px solid rgba(255, 255, 255, 0.1);
+      border-left-color: #38bdf8;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin-bottom: 1rem;
+    }
+    
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+  </style>
+</head>
+<body>
+
+  <header class="totem-header">
+    <h1><i class="fa-solid fa-layer-group"></i> FilaPro</h1>
+    <p>Toque no setor para retirar sua senha</p>
+    <div id="store-title" class="store-badge">Carregando...</div>
+  </header>
+
+  <main class="main-content">
+    <div class="sectors-grid" id="sectors-grid">
+      <div class="loading-container">
+        <div class="spinner"></div>
+        <p>Carregando setores...</p>
+      </div>
+    </div>
+  </main>
+
+  <div class="success-modal-overlay" id="success-modal">
+    <div class="success-modal-content">
+      <i class="fa-solid fa-circle-check success-icon"></i>
+      <h2 style="font-size: 2.5rem; color: #fff; margin-bottom: 0.5rem;">Senha Gerada!</h2>
+      <div class="ticket-sector-display" id="modal-sector">SETOR</div>
+      <div class="ticket-number-display" id="modal-ticket">---</div>
+      <p class="success-instruction">Retire seu comprovante impresso ou acompanhe pelos painéis.</p>
+    </div>
+  </div>
+
+  <!-- Audiocontext para o som -->
+  <script>
+    // Sintetizador de Áudio nativo
+    let globalAudioCtx = null;
+    function getAudioContext() {
+      if (!globalAudioCtx || globalAudioCtx.state === 'closed') {
+        globalAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (globalAudioCtx.state === 'suspended') {
+        globalAudioCtx.resume();
+      }
+      return globalAudioCtx;
+    }
+
+    function playSuccessSound() {
+      try {
+        const ctx = getAudioContext();
+        const now = ctx.currentTime;
+        
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(440, now); // A4
+        osc.frequency.exponentialRampToValueAtTime(880, now + 0.1); // A5
+        gain.gain.setValueAtTime(0, now);
+        gain.gain.linearRampToValueAtTime(0.5, now + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+        
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.5);
+      } catch (err) {
+        console.error('Falha ao reproduzir áudio WebAudio:', err);
+      }
+    }
+  </script>
+  <script src="/js/totem.js"></script>
+</body>
+</html>

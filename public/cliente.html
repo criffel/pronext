@@ -76,7 +76,22 @@
   </header>
 
   <main>
-    <div class="glass-card client-card" id="main-card">
+    <!-- Setup Card -->
+    <div class="glass-card client-card" id="setup-card" style="display: none;">
+      <h2 style="font-size: 1.5rem; font-weight: 800; color: #fff; margin-bottom: 1rem;">Gerar Senha</h2>
+      <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">Deseja receber a notificação no WhatsApp? (Opcional)</p>
+      <form id="setup-form" style="display: flex; flex-direction: column; gap: 1rem;">
+        <div class="form-group">
+          <label for="input-whatsapp" style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.5rem; display: block;">WhatsApp (com DDD)</label>
+          <input type="tel" id="input-whatsapp" placeholder="Ex: 11999999999" class="form-control" style="width: 100%; padding: 0.75rem; border-radius: var(--border-radius-md); border: 1px solid var(--border-glass); background: rgba(255, 255, 255, 0.05); color: #fff;">
+        </div>
+        <button type="submit" class="btn btn-primary" style="padding: 1rem; font-size: 1.1rem; border-radius: var(--border-radius-md); font-weight: 700; width: 100%;">
+          <i class="fa-solid fa-ticket"></i> Gerar Senha Agora
+        </button>
+      </form>
+    </div>
+
+    <div class="glass-card client-card" id="main-card" style="display: none;">
       <div style="margin-bottom: 1rem;">
         <span class="client-ticket-label" id="sector-name">Carregando...</span>
       </div>
