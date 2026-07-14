@@ -84,7 +84,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Chave de autenticação para rotas administrativas
 const ADMIN_API_KEY = process.env.ADMIN_API_KEY || 'filapro-admin-2026';
-const ATTENDANT_PIN = process.env.ATTENDANT_PIN || '1234';
+const ATTENDANT_PIN = process.env.ATTENDANT_PIN || '2021';
 function requireAdminKey(req, res, next) {
   const key = req.headers['x-api-key'] || req.query.apikey;
   if (key !== ADMIN_API_KEY) {
