@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const selectSector = document.getElementById('select-sector');
   const inputIp = document.getElementById('input-ip');
   const inputGuiche = document.getElementById('input-guiche');
+  const inputApiKey = document.getElementById('input-apikey');
   const tbodyScales = document.getElementById('scales-list-tbody');
 
   let storesData = {};
@@ -93,7 +94,10 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.addEventListener('click', (e) => {
         const ipToDelete = e.currentTarget.getAttribute('data-ip');
         if (confirm(`Deseja realmente remover a balança com IP ${ipToDelete}?`)) {
-          deleteScale(ipToDelete);
+          const apiKey = prompt("Digite a Chave de Administração para excluir:");
+          if (apiKey) {
+            deleteScale(ipToDelete, apiKey);
+          }
         }
       });
     });
@@ -107,32 +111,34 @@ document.addEventListener('DOMContentLoaded', () => {
     const store = selectStore.value;
     const sector = selectSector.value;
     const guiche = inputGuiche.value.trim();
+    const apiKey = inputApiKey.value.trim();
 
-    if (!ip || !store || !sector || !guiche) {
-      alert('Preencha todos os campos corretamente.');
+    if (!ip || !store || !sector || !guiche || !apiKey) {
+      alert('Preencha todos os campos e a Chave de Administração.');
       return;
     }
 
     // Adiciona ou atualiza no mapeamento local
     currentMappings[ip] = { store, sector, guiche };
 
-    saveConfigToServer();
+    saveConfigToServer(apiKey);
   });
 
   // 5. Deleta uma balança
-  function deleteScale(ip) {
+  function deleteScale(ip, apiKey) {
     if (currentMappings[ip]) {
       delete currentMappings[ip];
-      saveConfigToServer();
+      saveConfigToServer(apiKey);
     }
   }
 
   // 6. Envia as configurações atualizadas para o servidor
-  function saveConfigToServer() {
+  function saveConfigToServer(apiKey) {
     fetch('/api/toledo/config', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey
       },
       body: JSON.stringify({ mappings: currentMappings })
     })
