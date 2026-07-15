@@ -29,13 +29,16 @@ class WhatsAppService {
         headers: {
           'Authorization': `Bearer ${this.apiKey}`,
           'Content-Type': 'application/json'
-        }
+        },
+        timeout: 5000 // Previne travamento se a API não responder
       });
       
       console.log(`[WhatsApp] Mensagem enviada para ${phone}. ID: ${response.data.id || 'N/A'}`);
       return true;
     } catch (error) {
-      console.error(`[WhatsApp Error] Falha ao enviar para ${phone}:`, error.message);
+      // Simplifica o erro para não poluir os logs
+      const errReason = error.response ? `HTTP ${error.response.status}` : error.code || error.message;
+      console.error(`[WhatsApp Error] Falha ao enviar para ${phone}:`, errReason);
       return false;
     }
   }

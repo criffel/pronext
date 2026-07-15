@@ -30,7 +30,8 @@ let STORES = {};
 
 async function loadStoresFromDB() {
   const dbStores = await db.getAllStores();
-  STORES = {};
+  // Limpa as chaves sem destruir a referência de memória do objeto
+  for (const key in STORES) { delete STORES[key]; }
   dbStores.forEach(s => {
     STORES[s.id] = { name: s.name, prefix: 'L' + s.id };
   });
@@ -307,20 +308,7 @@ app.get('/api/toledo/download-relay', (req, res) => {
   }
 });
 
-// Rota super-curta para Autoatendimento do Cliente de uma filial específica
-// Substitui a antiga '/cliente/:loja/:setor'
-app.get('/:loja/:setor', (req, res, next) => {
-  const { loja, setor } = req.params;
-  const storeSlug = loja.toLowerCase();
-  const sectorSlug = setor.toLowerCase();
-  
-  if (STORES[storeSlug] && SECTORS[sectorSlug]) {
-    res.sendFile(path.join(__dirname, 'public', 'cliente.html'));
-  } else {
-    // Se não for filial válida, passa para a próxima rota (evita conflito)
-    next();
-  }
-});
+// O catch-all foi movido para o final do arquivo para evitar conflito com /tv/, /totem/, etc.
 
 // Antiga rota de autoatendimento mantida para retrocompatibilidade
 app.get('/cliente/:loja/:setor', (req, res) => {
@@ -361,16 +349,6 @@ app.get('/tv/:loja/:setor?', (req, res) => {
   }
 
   res.sendFile(path.join(__dirname, 'public', 'tv.html'));
-});
-
-// Rota de Totem Físico
-app.get('/totem/:loja', (req, res) => {
-  const { loja } = req.params;
-  if (STORES[loja.toLowerCase()]) {
-    res.sendFile(path.join(__dirname, 'public', 'totem.html'));
-  } else {
-    res.status(404).send('Filial inválida na URL do Totem.');
-  }
 });
 
 // Rota dinâmica para Atendente de uma filial específica
@@ -419,6 +397,21 @@ app.get('/api/config', (req, res) => {
     sectors: SECTORS,
     publicVapidKey: VAPID_PUBLIC_KEY
   });
+});
+
+// ─── ROTA CATCH-ALL DO CLIENTE (DEVE FICAR POR ÚLTIMO) ───────────────
+// Rota super-curta para Autoatendimento do Cliente de uma filial específica
+app.get('/:loja/:setor', (req, res, next) => {
+  const { loja, setor } = req.params;
+  const storeSlug = loja.toLowerCase();
+  const sectorSlug = setor.toLowerCase();
+  
+  if (STORES[storeSlug] && SECTORS[sectorSlug]) {
+    res.sendFile(path.join(__dirname, 'public', 'cliente.html'));
+  } else {
+    // Se não for filial válida, passa para a próxima rota
+    next();
+  }
 });
 
 // Comunicação Socket.io Isolada por Filial (Rooms)
